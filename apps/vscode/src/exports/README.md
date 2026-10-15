@@ -1,4 +1,4 @@
-# Cline API
+# TKBK Agent API (Cline API)
 
 The Cline extension exposes an API that can be used by other extensions. To use this API in your extension:
 
@@ -7,7 +7,7 @@ The Cline extension exposes an API that can be used by other extensions. To use 
 3. Get access to the API with the following code:
 
     ```ts
-    const clineExtension = vscode.extensions.getExtension<ClineAPI>("saoudrizwan.claude-dev")
+    const clineExtension = vscode.extensions.getExtension<ClineAPI>("tkbk-online.tkbk-agent")
 
     if (!clineExtension?.isActive) {
     	throw new Error("Cline extension is not activated")
@@ -46,3 +46,18 @@ The Cline extension exposes an API that can be used by other extensions. To use 
     ```
 
 For detailed information on the available methods and their usage, refer to the `cline.d.ts` file.
+
+## TKBK key for sibling extensions
+
+```ts
+const agent = vscode.extensions.getExtension<ClineAPI>("tkbk-online.tkbk-agent")
+const api = await agent?.activate()
+
+// The saved TKBK gateway key (cr_…), or undefined when none is configured.
+const key = await api?.getApiKey()
+
+// Fires after provider settings are saved (key entered, replaced or cleared).
+api?.onDidChangeApiKey?.(() => api.getApiKey().then(useNewKey))
+```
+
+Fall back to your own storage (or the `TKBK_API_KEY` environment variable) when the agent is not installed or returns `undefined`.

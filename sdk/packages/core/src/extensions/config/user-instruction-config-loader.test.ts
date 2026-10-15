@@ -85,7 +85,7 @@ describe("user instruction config loader", () => {
 			paths.some(
 				(p) =>
 					p.includes("Documents") &&
-					p.includes("Cline") &&
+					p.includes("TKBK") &&
 					p.includes("Workflows"),
 			),
 		).toBe(true);
@@ -286,7 +286,7 @@ Escalation runbook`,
 		const originalHomeDir = process.env.HOME?.trim() || homedir();
 		setHomeDir(join(tempRoot, "home"));
 		const workspaceRoot = join(tempRoot, "workspace");
-		const globalRulesDir = join(tempRoot, "home", ".cline", "rules");
+		const globalRulesDir = join(tempRoot, "home", ".tkbk", "rules");
 		await mkdir(workspaceRoot, { recursive: true });
 		await mkdir(globalRulesDir, { recursive: true });
 		// Legacy single-file ruleset: `.clinerules/skills` and

@@ -59,7 +59,7 @@ describe("AutoApproveBar", () => {
 		const { rerender } = render(<AutoApproveBar cloudAutoApprove />)
 		const trigger = screen.getByLabelText("Open auto-approve settings")
 
-		expect(trigger).toHaveTextContent("Auto-approve:Read, Edit, Commands, Web Fetch, MCP")
+		expect(trigger).toHaveTextContent("Автоподтверждение:Read, Edit, Commands, Web Fetch, MCP")
 		await user.hover(trigger)
 		expect(await screen.findByText(CLOUD_AUTO_APPROVE_TOOLTIP)).toBeInTheDocument()
 
@@ -80,7 +80,7 @@ describe("AutoApproveBar", () => {
 
 		fireEvent.click(screen.getByLabelText("Close auto-approve settings"))
 		rerender(<AutoApproveBar />)
-		expect(screen.getByLabelText("Open auto-approve settings")).toHaveTextContent("Auto-approve:Read")
+		expect(screen.getByLabelText("Open auto-approve settings")).toHaveTextContent("Автоподтверждение:Read")
 		expect(screen.queryByText(CLOUD_AUTO_APPROVE_TOOLTIP)).not.toBeInTheDocument()
 		expect(mocks.autoApprovalSettings).toEqual(localSettings)
 	})

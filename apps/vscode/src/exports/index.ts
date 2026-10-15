@@ -1,7 +1,26 @@
 import { Controller } from "@core/controller"
 import { sendChatButtonClickedEvent } from "@core/controller/ui/subscribeToChatButtonClicked"
+import { StateManager } from "@/core/storage/StateManager"
+import { resolveApiKey } from "@/sdk/cline-session-factory"
 import { Logger } from "@/shared/services/Logger"
 import { ClineAPI } from "./cline"
+
+const TKBK_PROVIDER_ID = "tkbk"
+
+/**
+ * The saved TKBK gateway key, read through the same resolver the agent uses
+ * for its own requests (legacy state first, then providers.json), so the Tab
+ * completion in the TKBK IDE always sees exactly the key the agent would send.
+ */
+export async function resolveTkbkApiKey(): Promise<string | undefined> {
+	try {
+		const apiKey = resolveApiKey(TKBK_PROVIDER_ID, StateManager.get().getApiConfiguration())?.trim()
+		return apiKey ? apiKey : undefined
+	} catch (error) {
+		Logger.warn("[TKBK API] Failed to read the TKBK key:", error)
+		return undefined
+	}
+}
 
 export function createClineAPI(sidebarController: Controller): ClineAPI {
 	const api: ClineAPI = {
@@ -36,6 +55,8 @@ export function createClineAPI(sidebarController: Controller): ClineAPI {
 				Logger.error("No active task to press button for")
 			}
 		},
+
+		getApiKey: resolveTkbkApiKey,
 	}
 
 	return api

@@ -161,19 +161,29 @@ export function setClineDirIfUnset(dir: string): void {
 	CLINE_DIR = trimmed;
 }
 
+/**
+ * TKBK Agent's data home. Defaults to `~/.tkbk` so a machine that also has
+ * Cline installed never shares task history, provider credentials or
+ * settings between the two. `TKBK_DIR` overrides it; `CLINE_DIR` is still
+ * honoured for tooling and tests written against the upstream name.
+ */
 export function resolveClineDir(): string {
 	if (CLINE_DIR) {
 		return CLINE_DIR;
+	}
+	const tkbkDir = process.env.TKBK_DIR?.trim();
+	if (tkbkDir) {
+		return tkbkDir;
 	}
 	const envDir = process.env.CLINE_DIR?.trim();
 	if (envDir) {
 		return envDir;
 	}
-	return join(HOME_DIR, ".cline");
+	return join(HOME_DIR, TKBK_CONFIG_DIR);
 }
 
 export function resolveDocumentsClineDirectoryPath(): string {
-	return join(HOME_DIR, "Documents", "Cline");
+	return join(HOME_DIR, "Documents", "TKBK");
 }
 
 type DocumentsExtensionName =
@@ -515,13 +525,9 @@ export function resolveHooksConfigSearchPaths(
 	return dedupePaths(hooks);
 }
 
-/** Global TKBK skills: `~/.tkbk/skills` (TKBK_DIR overrides the home root). */
+/** The TKBK data home (`~/.tkbk` unless TKBK_DIR / CLINE_DIR override it). */
 export function resolveTkbkDir(): string {
-	const envDir = process.env.TKBK_DIR?.trim();
-	if (envDir) {
-		return envDir;
-	}
-	return join(HOME_DIR, TKBK_CONFIG_DIR);
+	return resolveClineDir();
 }
 
 export function resolveTkbkSkillsDirPath(): string {

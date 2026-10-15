@@ -84,8 +84,8 @@ async function captureBrowserUrl(url: string): Promise<void> {
 	try {
 		const fs = await import("node:fs")
 		const path = await import("node:path")
-		const os = await import("node:os")
-		const clineDir = process.env.CLINE_DIR || path.join(os.homedir(), ".cline")
+		const { resolveTkbkHomeDir } = await import("@/shared/storage/tkbk-home")
+		const clineDir = resolveTkbkHomeDir()
 		const dataDir = path.join(clineDir, "data")
 		fs.mkdirSync(dataDir, { recursive: true })
 		const captureFile = path.join(dataDir, "debug-captured-urls.jsonl")

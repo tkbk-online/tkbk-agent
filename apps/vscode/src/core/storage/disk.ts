@@ -8,6 +8,7 @@ import os from "os"
 import * as path from "path"
 import { HostProvider } from "@/hosts/host-provider"
 import { Logger } from "@/shared/services/Logger"
+import { resolveTkbkHomeDir } from "@/shared/storage/tkbk-home"
 import { getDocumentsPath } from "./documents-path"
 
 export { getDocumentsPath } from "./documents-path"
@@ -45,7 +46,7 @@ export const GlobalFileNames = {
  * This is intended to eventually replace ~/Documents/Cline as the global config location.
  */
 function getClineHomePath(): string {
-	return path.join(os.homedir(), ".cline")
+	return resolveTkbkHomeDir()
 }
 
 export async function ensureTaskDirectoryExists(taskId: string): Promise<string> {

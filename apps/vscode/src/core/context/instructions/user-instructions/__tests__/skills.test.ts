@@ -74,7 +74,7 @@ describe("Skills Utility Functions", () => {
 
 	// Use path.join for OS-independent paths
 	const TEST_CWD = path.join("/test", "project")
-	const GLOBAL_SKILLS_DIR = path.join("/home", "user", ".cline", "skills")
+	const GLOBAL_SKILLS_DIR = path.join("/home", "user", ".tkbk", "skills")
 
 	beforeEach(() => {
 		sandbox = sinon.createSandbox()

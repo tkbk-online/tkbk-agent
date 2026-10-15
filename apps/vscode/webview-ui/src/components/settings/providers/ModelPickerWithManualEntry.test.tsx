@@ -77,7 +77,7 @@ describe("ModelPickerWithManualEntry", () => {
 			/>,
 		)
 
-		fireEvent.change(screen.getByLabelText("Model"), { target: { value: "mistral" } })
+		fireEvent.change(screen.getByLabelText("Модель"), { target: { value: "mistral" } })
 
 		expect(onSelect).toHaveBeenCalledWith({ providerId: "ollama", modelId: "mistral", modelInfo: models.mistral })
 	})
@@ -95,7 +95,7 @@ describe("ModelPickerWithManualEntry", () => {
 			/>,
 		)
 
-		expect(screen.getByText("Loading models…")).toBeInTheDocument()
+		expect(screen.getByText("Загружаем модели…")).toBeInTheDocument()
 		expect(screen.getByLabelText("Custom model ID")).toBeInTheDocument()
 	})
 
@@ -156,7 +156,7 @@ describe("ModelPickerWithManualEntry", () => {
 		)
 
 		expect(screen.queryByLabelText("Custom model ID")).not.toBeInTheDocument()
-		fireEvent.change(screen.getByLabelText("Model"), { target: { value: "__custom__" } })
+		fireEvent.change(screen.getByLabelText("Модель"), { target: { value: "__custom__" } })
 		expect(screen.getByLabelText("Custom model ID")).toBeInTheDocument()
 	})
 
@@ -174,7 +174,7 @@ describe("ModelPickerWithManualEntry", () => {
 			/>,
 		)
 
-		expect(screen.getByText("Model list may be stale for the current provider configuration.")).toBeInTheDocument()
+		expect(screen.getByText("Список моделей мог устареть для текущих настроек провайдера.")).toBeInTheDocument()
 		expect(screen.getByText("Selected model “custom-outside-list” is not in the current list.")).toBeInTheDocument()
 		expect(onSelect).not.toHaveBeenCalled()
 	})
@@ -256,7 +256,7 @@ describe("ModelPickerWithManualEntry", () => {
 			/>,
 		)
 
-		fireEvent.change(screen.getByLabelText("Model"), { target: { value: "__custom__" } })
+		fireEvent.change(screen.getByLabelText("Модель"), { target: { value: "__custom__" } })
 		expect(screen.getByLabelText("Custom model ID")).toHaveValue("")
 	})
 

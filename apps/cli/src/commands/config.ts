@@ -29,7 +29,10 @@ type ConfigIo = {
 };
 
 function resolveCliAgentConfigSearchPaths(cwd: string): string[] {
-	const clineDir = process.env.CLINE_DIR?.trim() || join(homedir(), ".cline");
+	const clineDir =
+		process.env.TKBK_DIR?.trim() ||
+		process.env.CLINE_DIR?.trim() ||
+		join(homedir(), ".tkbk");
 	return [join(cwd, ".cline", "agents"), join(clineDir, "agents")];
 }
 

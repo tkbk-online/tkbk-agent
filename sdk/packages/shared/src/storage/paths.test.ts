@@ -108,9 +108,11 @@ describe("storage path resolution", () => {
 		const homeRoot = mkdtempSync(join(tmpdir(), "tkbk-skills-home-"));
 		const previousHome = process.env.HOME ?? "~";
 		const previousTkbkDir = process.env.TKBK_DIR;
+		const previousClineDir = process.env.CLINE_DIR;
 		const workspace = join(homeRoot, "project");
 		try {
 			delete process.env.TKBK_DIR;
+			delete process.env.CLINE_DIR;
 			setHomeDir(homeRoot);
 			const paths = resolveSkillsConfigSearchPaths(workspace);
 			expect(paths[0]).toBe(join(workspace, ".tkbk", "skills"));
@@ -128,6 +130,11 @@ describe("storage path resolution", () => {
 				delete process.env.TKBK_DIR;
 			} else {
 				process.env.TKBK_DIR = previousTkbkDir;
+			}
+			if (previousClineDir === undefined) {
+				delete process.env.CLINE_DIR;
+			} else {
+				process.env.CLINE_DIR = previousClineDir;
 			}
 			setHomeDir(previousHome);
 			rmSync(homeRoot, { recursive: true, force: true });
@@ -338,7 +345,7 @@ describe("storage path resolution", () => {
 
 		expect(paths).toEqual([
 			join(workspacePath, ".clinerules", "workflows"),
-			expect.stringContaining(join("Documents", "Cline", "Workflows")),
+			expect.stringContaining(join("Documents", "TKBK", "Workflows")),
 			join("/tmp/home", ".cline", "workflows"),
 			join(workspacePath, ".cline", "workflows"),
 		]);

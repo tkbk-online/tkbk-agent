@@ -1,6 +1,6 @@
 import fsSync from "node:fs"
-import os from "node:os"
 import path from "node:path"
+import { resolveTkbkHomeDir } from "@/shared/storage/tkbk-home"
 import { ClineFileStorage } from "./ClineFileStorage"
 import { ClineMemento } from "./ClineStorage"
 
@@ -81,7 +81,7 @@ function hashString(str: string): string {
 
 /**
  * Resolve the Cline data directory from the environment:
- * CLINE_DATA_DIR (trimmed) > CLINE_DIR + "/data" > ~/.cline/data.
+ * CLINE_DATA_DIR (trimmed) > TKBK_DIR|CLINE_DIR + "/data" > ~/.tkbk/data.
  *
  * Single source of truth shared by createStorageContext and the SDK adapter's
  * legacy-state-reader, matching the SDK's own resolveClineDataDir. Every
@@ -95,7 +95,7 @@ export function resolveDataDirFromEnv(): string {
 	if (envDataDir) {
 		return envDataDir
 	}
-	const clineDir = process.env.CLINE_DIR?.trim() || path.join(os.homedir(), ".cline")
+	const clineDir = resolveTkbkHomeDir()
 	return path.join(clineDir, SETTINGS_SUBFOLDER)
 }
 

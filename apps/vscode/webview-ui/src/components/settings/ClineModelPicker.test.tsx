@@ -212,6 +212,6 @@ describe("ClineModelPicker", () => {
 
 		render(<ClineModelPicker currentMode="act" />)
 
-		expect(screen.getByText("Reasoning Effort")).toBeInTheDocument()
+		expect(screen.getByText("Глубина рассуждений")).toBeInTheDocument()
 	})
 })

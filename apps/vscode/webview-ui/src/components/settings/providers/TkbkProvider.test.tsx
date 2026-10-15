@@ -120,8 +120,8 @@ describe("TkbkProvider", () => {
 
 		expect(screen.getByText(/Ключ сохранён/)).toBeTruthy()
 
-		expect(screen.getByLabelText("Model")).toHaveValue("claude-sonnet-5")
-		fireEvent.change(screen.getByLabelText("Model"), { target: { value: "gpt-6.1-sol" } })
+		expect(screen.getByLabelText("Модель")).toHaveValue("claude-sonnet-5")
+		fireEvent.change(screen.getByLabelText("Модель"), { target: { value: "gpt-6.1-sol" } })
 
 		await waitFor(() =>
 			expect(commitSelection).toHaveBeenCalledWith("plan", {

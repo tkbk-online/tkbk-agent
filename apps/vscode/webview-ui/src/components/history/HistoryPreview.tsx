@@ -132,7 +132,7 @@ const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
 							fontSize: "0.85em",
 							textTransform: "uppercase",
 						}}>
-						Recent
+						Недавние
 					</span>
 				</div>
 				{taskHistory.filter((item) => item.ts && item.task).length > 0 && (
@@ -141,7 +141,7 @@ const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
 						className="history-view-all-btn"
 						onClick={() => showHistoryView()}
 						type="button">
-						View All
+						Все задачи
 						<span className="codicon codicon-chevron-right" />
 					</button>
 				)}

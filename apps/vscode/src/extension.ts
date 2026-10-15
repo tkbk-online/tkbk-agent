@@ -53,6 +53,7 @@ import { VscodeWebviewProvider } from "./hosts/vscode/VscodeWebviewProvider"
 import { exportVSCodeStorageToSharedFiles } from "./hosts/vscode/vscode-to-file-migration"
 import { ExtensionRegistryInfo } from "./registry"
 import { AuthService, LogoutReason } from "./sdk/auth-service"
+import { onProviderSettingsSaved } from "./sdk/model-catalog/provider-settings-events"
 import { installStarterSkills } from "./services/skills/tkbk-starter-skills"
 import { telemetryService } from "./services/telemetry"
 import type { RolloutBundleActivation } from "./services/telemetry/rollout-metadata"
@@ -528,7 +529,13 @@ ${ctx.cellJson || "{}"}
 
 	Logger.log(`[Cline] extension activated in ${performance.now() - activationStartTime} ms`)
 
-	return createClineAPI(webview.controller)
+	// Extension API for sibling extensions (TKBK IDE Tab completion): the saved
+	// gateway key plus a change event fired whenever provider settings are saved.
+	const apiKeyChanged = new vscode.EventEmitter<void>()
+	context.subscriptions.push(apiKeyChanged)
+	context.subscriptions.push({ dispose: onProviderSettingsSaved(() => apiKeyChanged.fire()) })
+
+	return { ...createClineAPI(webview.controller), onDidChangeApiKey: apiKeyChanged.event }
 }
 
 async function showJupyterPromptInput(title: string, placeholder: string): Promise<string | undefined> {

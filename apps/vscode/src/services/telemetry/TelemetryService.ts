@@ -1,6 +1,5 @@
 import { HostProvider } from "@hosts/host-provider"
 import type { BrowserSettings } from "@shared/BrowserSettings"
-import { ShowMessageType } from "@shared/proto/host/window"
 import type { TaskFeedbackType } from "@shared/WebviewMessage"
 import * as os from "os"
 import { ClineAccountUserInfo } from "@/services/auth/AuthService"
@@ -402,30 +401,18 @@ export class TelemetryService {
 	 * @param didUserOptIn Whether the user has explicitly opted into telemetry
 	 */
 	public async updateTelemetryState(didUserOptIn: boolean): Promise<void> {
-		// First check global telemetry level - telemetry should only be enabled when level is "all"
-
-		// We only enable telemetry if global host telemetry is enabled
+		// TKBK Agent ships without analytics keys and with telemetry disabled by
+		// default, so the upstream warning ("Cline error and usage reporting is
+		// enabled, but IDE telemetry is disabled") is intentionally not shown:
+		// it would only tell people about a reporting pipeline that does not
+		// exist in this build. The host setting is still read so the method
+		// keeps its contract for callers.
+		if (!didUserOptIn) {
+			return
+		}
 		const hostSetting = await HostProvider.env.getTelemetrySettings({})
 		if (hostSetting.isEnabled === Setting.DISABLED) {
-			// Only show warning if user has opted in to Cline telemetry but host telemetry is disabled
-			if (didUserOptIn) {
-				void HostProvider.window
-					.showMessage({
-						type: ShowMessageType.WARNING,
-						message:
-							"Cline error and usage reporting is enabled, but IDE telemetry is disabled. To enable error and usage reporting for this extension, enable telemetry in IDE settings.",
-						options: {
-							items: ["Open Settings"],
-						},
-					})
-					.then((response: { selectedOption?: string }) => {
-						if (response.selectedOption === "Open Settings") {
-							void HostProvider.window.openSettings({
-								query: "telemetry.telemetryLevel",
-							})
-						}
-					})
-			}
+			Logger.log("[TelemetryService] Telemetry opted in, but IDE telemetry is disabled; staying silent.")
 		}
 	}
 

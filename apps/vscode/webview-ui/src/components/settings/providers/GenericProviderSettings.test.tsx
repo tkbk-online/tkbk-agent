@@ -89,9 +89,9 @@ describe("GenericProviderSettings", () => {
 			/>,
 		)
 
-		expect(screen.getByLabelText("Model")).toHaveValue("deepseek-chat")
-		expect(screen.queryByText("Reasoning Effort")).not.toBeInTheDocument()
-		fireEvent.change(screen.getByLabelText("Model"), { target: { value: "deepseek-reasoner" } })
+		expect(screen.getByLabelText("Модель")).toHaveValue("deepseek-chat")
+		expect(screen.queryByText("Глубина рассуждений")).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText("Модель"), { target: { value: "deepseek-reasoner" } })
 
 		await waitFor(() => expect(commitSelection).toHaveBeenCalledTimes(1))
 		expect(commitSelection).toHaveBeenCalledWith("act", {
@@ -135,7 +135,7 @@ describe("GenericProviderSettings", () => {
 			/>,
 		)
 
-		expect(screen.getByText("Reasoning Effort")).toBeInTheDocument()
+		expect(screen.getByText("Глубина рассуждений")).toBeInTheDocument()
 	})
 
 	it("shows saved API keys as masked and does not clear them on mount", async () => {

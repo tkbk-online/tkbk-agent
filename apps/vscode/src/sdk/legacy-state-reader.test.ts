@@ -88,7 +88,7 @@ describe("resolveDataDir", () => {
 		delete process.env.CLINE_DATA_DIR
 		delete process.env.CLINE_DIR
 		try {
-			expect(resolveDataDir()).toBe(path.join(os.homedir(), ".cline", "data"))
+			expect(resolveDataDir()).toBe(path.join(os.homedir(), ".tkbk", "data"))
 		} finally {
 			process.env.CLINE_DATA_DIR = originalData
 			process.env.CLINE_DIR = originalDir

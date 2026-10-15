@@ -1,8 +1,8 @@
 import * as fs from "fs/promises"
-import * as os from "os"
 import * as path from "path"
 import { Environment, type EnvironmentConfig } from "./shared/config-types"
 import { Logger } from "./shared/services/Logger"
+import { resolveTkbkHomeDir } from "./shared/storage/tkbk-home"
 
 export { Environment } /**
  * Schema for the endpoints.json configuration file used in on-premise deployments.
@@ -124,10 +124,10 @@ class ClineEndpoint {
 
 	/**
 	 * Returns the path to the endpoints.json configuration file.
-	 * Located at ~/.cline/endpoints.json
+	 * Located at ~/.tkbk/endpoints.json (TKBK_DIR / CLINE_DIR override the home).
 	 */
 	private static getEndpointsFilePath(): string {
-		return path.join(os.homedir(), ".cline", "endpoints.json")
+		return path.join(resolveTkbkHomeDir(), "endpoints.json")
 	}
 
 	/**

@@ -31,6 +31,7 @@ import type {
 import { buildEffectiveProviderConfig } from "./effective-config"
 import { applyHostModelInfoOverrides } from "./host-overrides"
 import { fromSdkApiFormat, nonNegativeFiniteNumber, positiveFiniteNumber, toSdkApiFormat } from "./model-values"
+import { emitProviderSettingsSaved } from "./provider-settings-events"
 import { toSdkProviderId } from "./sdk-provider-id"
 import { adaptSdkModelInfo } from "./shape-adapter"
 
@@ -584,6 +585,7 @@ function getProviderSettings(providerId: ProviderId): ProviderSettingsRecord {
 function saveProviderSettings(providerId: ProviderId, next: ProviderSettingsRecord, tokenSource?: ProviderTokenSource): void {
 	const provider = providerSettingsProviderId(providerId)
 	getProviderSettingsManager().saveProviderSettings({ ...next, provider }, { setLastUsed: false, tokenSource })
+	emitProviderSettingsSaved()
 }
 
 // Credential-bearing fields. A GUI patch that touches any of these means the

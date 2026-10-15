@@ -1,3 +1,5 @@
+import type { Event } from "vscode"
+
 export interface ClineAPI {
 	/**
 	 * Starts a new task with an optional initial message and images.
@@ -22,4 +24,20 @@ export interface ClineAPI {
 	 * Simulates pressing the secondary button in the chat interface.
 	 */
 	pressSecondaryButton(): Promise<void>
+
+	/**
+	 * The TKBK gateway key (`cr_…`) the person saved in TKBK Agent, or
+	 * `undefined` when none is configured. Sibling extensions (e.g. the TKBK IDE
+	 * Tab completion) call this instead of asking for the key a second time.
+	 * The key is read on every call; callers must not cache it beyond
+	 * {@link onDidChangeApiKey}.
+	 */
+	getApiKey(): Promise<string | undefined>
+
+	/**
+	 * Fires after provider settings were saved — including when the TKBK key is
+	 * entered, replaced or cleared. Re-read with {@link getApiKey}. Present only
+	 * in the VS Code host.
+	 */
+	onDidChangeApiKey?: Event<void>
 }

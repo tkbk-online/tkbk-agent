@@ -1,5 +1,6 @@
 import os from "os"
 import * as path from "path"
+import { resolveTkbkHomeDir } from "@/shared/storage/tkbk-home"
 
 const SKILL_DIRECTORY_NAMES = {
 	clineruleSkillsDir: ".clinerules/skills",
@@ -14,7 +15,7 @@ export type SkillsScanDirectory = {
 }
 
 function getClineHomePath(): string {
-	return path.join(os.homedir(), ".cline")
+	return resolveTkbkHomeDir()
 }
 
 function getClineSkillsDirectoryPath(): string {

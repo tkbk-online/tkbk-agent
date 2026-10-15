@@ -74,17 +74,17 @@ export function ModelPickerWithManualEntry({
 	return (
 		<div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
 			<label htmlFor="provider-model-picker">
-				<span className="font-medium">Model</span>
+				<span className="font-medium">Модель</span>
 			</label>
 
-			{isStale && <div role="status">Model list may be stale for the current provider configuration.</div>}
-			{isLoading && <div role="status">Loading models…</div>}
+			{isStale && <div role="status">Список моделей мог устареть для текущих настроек провайдера.</div>}
+			{isLoading && <div role="status">Загружаем модели…</div>}
 			{error && <div role="alert">{error}</div>}
 
 			{hasModels && (
 				<DropdownContainer className="dropdown-container">
 					<VSCodeDropdown
-						aria-label="Model"
+						aria-label="Модель"
 						className="w-full"
 						id="provider-model-picker"
 						key={dropdownKey}

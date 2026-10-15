@@ -20,6 +20,7 @@ describe("isPrivateModelCatalogProvider", () => {
 		"hicap",
 		"litellm",
 		"poolside",
+		"tkbk",
 	])("recognizes %s as an endpoint-specific catalog provider", (providerId) => {
 		expect(isPrivateModelCatalogProvider(providerId)).toBe(true);
 	});
@@ -702,6 +703,76 @@ describe("resolveProviderConfig", () => {
 				pricing: { input: 0, output: 0 },
 				status: "active",
 			}),
+		);
+	});
+
+	it("loads TKBK models from the authenticated gateway catalog and keeps bundled facts", async () => {
+		const fetchMock = vi.fn(async () => {
+			return new Response(
+				JSON.stringify({
+					object: "list",
+					data: [
+						{ id: "claude-sonnet-5", object: "model" },
+						{ id: "claude-haiku-5-5", object: "model" },
+						{ id: "gpt-6.2-mini", object: "model", context_window: 400_000 },
+						{ id: "text-embedding-3-large", object: "model" },
+					],
+				}),
+				{ status: 200, headers: { "content-type": "application/json" } },
+			);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const resolved = await resolveProviderConfig(
+			"tkbk",
+			{ failOnError: true, cacheTtlMs: 0 },
+			{
+				providerId: "tkbk",
+				modelId: "claude-sonnet-5",
+				apiKey: "cr_test_key",
+				baseUrl: "https://api.tkbk.online/v1",
+			},
+		);
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			"https://api.tkbk.online/v1/models",
+			expect.objectContaining({
+				method: "GET",
+				headers: expect.objectContaining({
+					Authorization: "Bearer cr_test_key",
+				}),
+			}),
+		);
+		const known = resolved?.knownModels ?? {};
+		// Bundled models survive the refresh with their richer facts.
+		expect(known["claude-sonnet-5"]?.metadata?.apiProtocol).toBe("anthropic");
+		expect(known["claude-sonnet-5"]?.contextWindow).toBeGreaterThan(100_000);
+		expect(known["gpt-6.1-sol"]).toBeDefined();
+		// New gateway ids are added; Claude ids route to Anthropic Messages.
+		expect(known["claude-haiku-5-5"]?.metadata?.apiProtocol).toBe("anthropic");
+		expect(known["gpt-6.2-mini"]).toEqual(
+			expect.objectContaining({
+				contextWindow: 400_000,
+				status: "active",
+			}),
+		);
+		expect(known["gpt-6.2-mini"]?.metadata?.apiProtocol).toBeUndefined();
+		expect(known["text-embedding-3-large"]).toBeUndefined();
+	});
+
+	it("serves the bundled TKBK catalog without a key and does not call the gateway", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		const resolved = await resolveProviderConfig(
+			"tkbk",
+			{ failOnError: true, cacheTtlMs: 0 },
+			{ providerId: "tkbk", modelId: "claude-sonnet-5" },
+		);
+
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(Object.keys(resolved?.knownModels ?? {})).toEqual(
+			expect.arrayContaining(["claude-sonnet-5", "gpt-6.1-sol", "glm-5.3"]),
 		);
 	});
 

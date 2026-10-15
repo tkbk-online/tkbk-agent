@@ -33,6 +33,9 @@ import {
 	resolveSessionDataDir,
 	resolveTeamDataDir,
 	resolveWorkflowsConfigSearchPaths,
+	resolveSkillsConfigSearchPaths,
+	resolveTkbkDir,
+	resolveTkbkSkillsDirPath,
 	resolveWorkspaceRulesConfigPaths,
 	setHomeDir,
 } from "./paths";
@@ -96,6 +99,36 @@ describe("storage path resolution", () => {
 				join(homeRoot, ".agents", "plugins"),
 			]);
 		} finally {
+			setHomeDir(previousHome);
+			rmSync(homeRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("scans TKBK skill directories before the Cline ones", () => {
+		const homeRoot = mkdtempSync(join(tmpdir(), "tkbk-skills-home-"));
+		const previousHome = process.env.HOME ?? "~";
+		const previousTkbkDir = process.env.TKBK_DIR;
+		const workspace = join(homeRoot, "project");
+		try {
+			delete process.env.TKBK_DIR;
+			setHomeDir(homeRoot);
+			const paths = resolveSkillsConfigSearchPaths(workspace);
+			expect(paths[0]).toBe(join(workspace, ".tkbk", "skills"));
+			expect(paths).toContain(join(workspace, ".cline", "skills"));
+			expect(paths).toContain(join(homeRoot, ".tkbk", "skills"));
+			expect(resolveTkbkSkillsDirPath()).toBe(join(homeRoot, ".tkbk", "skills"));
+
+			process.env.TKBK_DIR = join(homeRoot, "custom-tkbk");
+			expect(resolveTkbkDir()).toBe(join(homeRoot, "custom-tkbk"));
+			expect(resolveSkillsConfigSearchPaths()).toContain(
+				join(homeRoot, "custom-tkbk", "skills"),
+			);
+		} finally {
+			if (previousTkbkDir === undefined) {
+				delete process.env.TKBK_DIR;
+			} else {
+				process.env.TKBK_DIR = previousTkbkDir;
+			}
 			setHomeDir(previousHome);
 			rmSync(homeRoot, { recursive: true, force: true });
 		}

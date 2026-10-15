@@ -100,6 +100,7 @@ export {
 	isProviderApiLine,
 	isRegisteredHandlerAsync,
 	isRetryableProviderError,
+	isTkbkAnthropicModelId,
 	normalizeProviderId,
 	OLLAMA_DEFAULT_CONTEXT_WINDOW,
 	type ProviderApiLine,
@@ -108,6 +109,11 @@ export {
 	resolveGatewayProviderRegistration,
 	resolveGatewayProviderRegistrationSync,
 	resolveProviderApiLineBaseUrl,
+	TKBK_API_BASE_URL,
+	TKBK_BUNDLED_MODELS,
+	TKBK_DEFAULT_MODEL_ID,
+	TKBK_MODELS_SOURCE_URL,
+	TKBK_PROVIDER_ID,
 } from "./providers";
 export {
 	type ProviderUsageCostDisplay,

@@ -1,142 +1,111 @@
-# Cline
-<div align="center">
-<table>
-<tbody>
-<td align="center">
-<a href="https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev" target="_blank"><strong>Download on VS Marketplace</strong></a>
-</td>
-<td align="center">
-<a href="https://discord.gg/cline" target="_blank"><strong>Discord</strong></a>
-</td>
-<td align="center">
-<a href="https://www.reddit.com/r/cline/" target="_blank"><strong>r/cline</strong></a>
-</td>
-<td align="center">
-<a href="https://github.com/cline/cline/discussions/categories/feature-requests?discussions_q=is%3Aopen+category%3A%22Feature+Requests%22+sort%3Atop" target="_blank"><strong>Feature Requests</strong></a>
-</td>
-<td align="center">
-<a href="https://docs.cline.bot/getting-started/installing-cline" target="_blank"><strong>Getting Started</strong></a>
-</td>
-</tbody>
-</table>
-</div>
+<p align="center">
+  <img src="assets/icons/icon.png" width="80" alt="TKBK Agent" />
+</p>
 
-Meet Cline, an AI assistant that can use your **CLI** a**N**d **E**ditor.
+<h1 align="center">TKBK Agent</h1>
 
-Thanks to [Claude Sonnet's agentic coding capabilities](https://www.anthropic.com/claude/sonnet), Cline can handle complex software development tasks step-by-step. With tools that let him create & edit files, explore large projects, use the browser, and execute terminal commands (after you grant permission), he can assist you in ways that go beyond code completion or tech support. Cline can even use the Model Context Protocol (MCP) to create new tools and extend his own capabilities. While autonomous AI scripts traditionally run in sandboxed environments, this extension provides a human-in-the-loop GUI to approve every file change and terminal command, providing a safe and accessible way to explore the potential of agentic AI.
+<p align="center">
+Автономный агент для кода в VS Code. Claude, GPT, DeepSeek, GLM и Grok — по одному ключу TKBK, оплата в рублях.
+</p>
 
-1. Enter your task and add images to convert mockups into functional apps or fix bugs with screenshots.
-2. Cline starts by analyzing your file structure & source code ASTs, running regex searches, and reading relevant files to get up to speed in existing projects. By carefully managing what information is added to context, Cline can provide valuable assistance even for large, complex projects without overwhelming the context window.
-3. Once Cline has the information he needs, he can:
-    - Create and edit files + monitor linter/compiler errors along the way, letting him proactively fix issues like missing imports and syntax errors on his own.
-    - Execute commands directly in your terminal and monitor their output as he works, letting him e.g., react to dev server issues after editing a file.
-    - For web development tasks, Cline can launch the site in a headless browser, click, type, scroll, and capture screenshots + console logs, allowing him to fix runtime errors and visual bugs.
-4. When a task is completed, Cline will present the result to you with a terminal command like `open -a "Google Chrome" index.html`, which you run with a click of a button.
-
-> [!TIP]
-> Follow [this guide](https://docs.cline.bot/usage/ide#move-cline-to-the-right-sidebar) to open Cline on the right side of your editor. This lets you use Cline side-by-side with your file explorer, and see how he changes your workspace more clearly.
+<p align="center">
+<a href="https://tkbk.online">tkbk.online</a> ·
+<a href="https://tkbk.online/login">Вход через Telegram</a> ·
+<a href="https://tkbk.online/buy">Купить ключ</a> ·
+<a href="https://github.com/tkbk-online/tkbk-mcp">MCP-серверы TKBK</a>
+</p>
 
 ---
 
-<img align="right" width="340" src="https://github.com/user-attachments/assets/3cf21e04-7ce9-4d22-a7b9-ba2c595e88a4">
+TKBK Agent пишет и правит файлы, запускает команды в терминале, работает с браузером и MCP-серверами — и спрашивает подтверждение на каждом шаге. Это сборка открытого агента [Cline](https://github.com/cline/cline) (Apache 2.0) под брендом TKBK: провайдер TKBK по умолчанию, вход через Telegram-бота, русский интерфейс первого запуска и стартовые скилы для российских сервисов.
 
-### Use any API and Model
+## Установка за минуту
 
-Cline supports API providers like OpenRouter, Anthropic, OpenAI, Google Gemini, AWS Bedrock, Azure, GCP Vertex, Cerebras and Groq. You can also configure any OpenAI compatible API, or use a local model through LM Studio/Ollama. If you're using OpenRouter, the extension fetches their latest model list, allowing you to use the newest models as soon as they're available.
+1. **Скачайте `.vsix`** из [релизов](https://github.com/tkbk-online/tkbk-agent/releases) (или соберите сами, см. ниже).
+2. В VS Code: `Ctrl+Shift+P` → **Extensions: Install from VSIX…** → выберите файл. Или в терминале:
 
-The extension also keeps track of total tokens and API usage cost for the entire task loop and individual requests, keeping you informed of spend every step of the way.
+   ```bash
+   code --install-extension tkbk-agent-0.1.0.vsix
+   ```
 
-<!-- Transparent pixel to create line break after floating image -->
+3. Откройте TKBK Agent в боковой панели (иконка **TK**).
+4. Нажмите **«Войти через Telegram-бота»** — откроется tkbk.online/login. Подтвердите вход в боте, скопируйте ключ `cr_…` из кабинета и вставьте его в поле «Ключ TKBK». Нет ключа — **«Купить ключ»**.
+5. Выберите модель (по умолчанию Claude Sonnet 5) и нажмите **«Начать»**.
 
-<img width="2000" height="0" src="https://github.com/user-attachments/assets/ee14e6f7-20b8-4391-9091-8e8e25561929"><br>
+Готово: первая задача — просто опишите, что нужно сделать.
 
-<img align="left" width="370" src="https://github.com/user-attachments/assets/81be79a8-1fdb-4028-9129-5fe055e01e76">
+> Публикация в Open VSX и VS Code Marketplace готовится; после неё установка будет в один клик из каталога расширений. Инструкция для публикации — [docs/tkbk/OPEN-VSX.md](https://github.com/tkbk-online/tkbk-agent/blob/main/docs/tkbk/OPEN-VSX.md).
 
-### Run Commands in Terminal
+## Модели
 
-Cline can execute commands and receive their output to install packages, run build scripts, deploy applications, manage databases, and run tests, all while adapting to your dev environment & toolchain to get the job done right.
+Провайдер **TKBK** ходит на `https://api.tkbk.online/v1`: Claude — через Anthropic Messages (`/v1/messages`, кэш промптов и расширенное мышление), остальные — через OpenAI-совместимый `/v1/chat/completions`. Протокол выбирается по модели автоматически.
 
-By default, commands run in a visible VS Code terminal, using the [shell integration API introduced in VSCode v1.93](https://code.visualstudio.com/updates/v1_93#_terminal-shell-integration-api) to stream output as commands run and let you watch or interact with them directly. You can switch to running commands in a background process instead (Settings → Terminal → Terminal Execution Mode).
+| Модель | Для чего |
+|---|---|
+| `claude-sonnet-5` | повседневный код, по умолчанию |
+| `claude-opus-5-5`, `claude-fable-5-1` | сложная архитектура и отладка |
+| `gpt-6.1-sol` | GPT-линейка |
+| `deepseek-v4-pro` | экономичный вариант с рассуждением |
+| `glm-5.3` | экономичный вариант |
+| `grok-4.7` | Grok |
 
-<!-- Transparent pixel to create line break after floating image -->
+После сохранения ключа список дополняется живым каталогом `GET https://api.tkbk.online/v1/models`; любой id можно ввести вручную. Цены в интерфейсе показаны в долларах объёма — так же списывается баланс в кабинете TKBK.
 
-<img width="2000" height="0" src="https://github.com/user-attachments/assets/ee14e6f7-20b8-4391-9091-8e8e25561929"><br>
+**Свой ключ другого провайдера** (OpenAI, Anthropic, Gemini, OpenRouter, Ollama и ещё ~60) — выберите его в списке провайдеров: всё, что умеет Cline, осталось на месте.
 
-<img align="right" width="400" src="https://github.com/user-attachments/assets/c5977833-d9b8-491e-90f9-05f9cd38c588">
+## Скилы
 
-### Create and Edit Files
+Скилы — инструкции в формате `SKILL.md` ([Agent Skills](https://agentskills.io), как у vercel-labs/skills). Агент подхватывает их из:
 
-Cline can create and edit files directly in your editor, presenting you a diff view of the changes. You can edit or revert Cline's changes directly in the diff view editor, or provide feedback in chat until you're satisfied with the result. Cline also monitors linter/compiler errors (missing imports, syntax errors, etc.) so he can fix issues that come up along the way on his own.
+- `<проект>/.tkbk/skills/<имя>/SKILL.md` — скилы проекта;
+- `~/.tkbk/skills/<имя>/SKILL.md` — ваши глобальные скилы;
+- а также из `.cline/skills`, `.claude/skills`, `.agents/skills` — совместимость с Cline и Claude Code.
 
-All changes made by Cline are recorded in your file's Timeline, providing an easy way to track and revert modifications if needed.
+При первом запуске TKBK Agent кладёт в `~/.tkbk/skills` пять стартовых скилов (и больше никогда их не перезаписывает):
 
-<!-- Transparent pixel to create line break after floating image -->
+| Скил | Что делает |
+|---|---|
+| `tkbk-marketplaces` | Wildberries и Ozon через MCP TKBK: заказы, остатки, цены, отзывы |
+| `tkbk-bitrix24` | Битрикс24: лиды, сделки, задачи, выборки по воронке |
+| `tkbk-amocrm` | amoCRM / Kommo: сделки, контакты, примечания |
+| `tkbk-review-reply` | ответ на отзыв покупателя от имени магазина |
+| `tkbk-tech-spec` | техзадание из переписки с заказчиком |
 
-<img width="2000" height="0" src="https://github.com/user-attachments/assets/ee14e6f7-20b8-4391-9091-8e8e25561929"><br>
+Переменная `TKBK_DIR` переопределяет домашнюю папку `~/.tkbk`.
 
-<img align="left" width="370" src="https://github.com/user-attachments/assets/bc2e85ba-dfeb-4fe6-9942-7cfc4703cbe5">
+## MCP-серверы TKBK
 
-### Use the Browser
+Wildberries, Ozon, Яндекс Маркет, Битрикс24, amoCRM, Авито, Яндекс Директ, Метрика, Вебмастер, DaData — хостинг `https://mcp.tkbk.online/mcp/<сервис>` по тому же ключу `cr_…` или локально через `npx`. Подключение описано в [tkbk-online/tkbk-mcp](https://github.com/tkbk-online/tkbk-mcp); в расширении серверы добавляются в разделе «MCP-серверы».
 
-With Claude Sonnet's new [Computer Use](https://www.anthropic.com/news/3-5-models-and-computer-use) capability, Cline can launch a browser, click elements, type text, and scroll, capturing screenshots and console logs at each step. This allows for interactive debugging, end-to-end testing, and even general web use! This gives him autonomy to fixing visual bugs and runtime issues without you needing to handhold and copy-pasting error logs yourself.
+## Сборка из исходников
 
-Try asking Cline to "test the app", and watch as he runs a command like `npm run dev`, launches your locally running dev server in a browser, and performs a series of tests to confirm that everything works. [See a demo here.](https://x.com/sdrzn/status/1850880547825823989)
+Нужны [Bun](https://bun.com) ≥ 1.4 и Node ≥ 22.
 
-<!-- Transparent pixel to create line break after floating image -->
+```bash
+git clone https://github.com/tkbk-online/tkbk-agent
+cd tkbk-agent
+bun install
+bun run build:sdk
+cd apps/vscode
+bun run protos
+bun run download-ripgrep
+bun run package
+bunx vsce package --no-dependencies --out tkbk-agent-0.1.0.vsix
+```
 
-<img width="2000" height="0" src="https://github.com/user-attachments/assets/ee14e6f7-20b8-4391-9091-8e8e25561929"><br>
+На Windows встроенный `protoc` из `grpc-tools` может не запускаться (собран с отладочной библиотекой); положите официальный `protoc.exe` из [релизов protobuf](https://github.com/protocolbuffers/protobuf/releases) в `apps/vscode/tmp-protoc/bin/` — скрипт сборки подхватит его сам.
 
-<img align="right" width="350" src="https://github.com/user-attachments/assets/ac0efa14-5c1f-4c26-a42d-9d7c56f5fadd">
+Тесты: `bun run test:unit` (расширение), `cd webview-ui && bun run test` (интерфейс), в `sdk/packages/*` — `bun run test`.
 
-### "add a tool that..."
+## Что изменено относительно Cline
 
-Thanks to the [Model Context Protocol](https://github.com/modelcontextprotocol), Cline can extend his capabilities through custom tools. While you can use [community-made servers](https://github.com/modelcontextprotocol/servers), Cline can instead create and install tools tailored to your specific workflow. Just ask Cline to "add a tool" and he will handle everything, from creating a new MCP server to installing it into the extension. These custom tools then become part of Cline's toolkit, ready to use in future tasks.
+- `@cline/llms`: провайдер `tkbk` (base URL `https://api.tkbk.online/v1`, встроенный каталог семи моделей, маршрутизация протокола по модели).
+- `@cline/core`: живой каталог моделей TKBK из `GET /v1/models` по ключу.
+- `@cline/shared`: пути скилов `.tkbk/skills` и `~/.tkbk/skills`.
+- Расширение: провайдер TKBK по умолчанию, экран первого запуска на русском с входом через Telegram-бота, кнопки «Войти через Telegram-бота» / «Купить ключ», стартовые скилы, иконка и тексты TKBK, id расширения `tkbk-online.tkbk-agent`.
 
--   "add a tool that fetches Jira tickets": Retrieve ticket ACs and put Cline to work
--   "add a tool that manages AWS EC2s": Check server metrics and scale instances up or down
--   "add a tool that pulls the latest PagerDuty incidents": Fetch details and ask Cline to fix bugs
+Телеметрия Cline в этой сборке не включена: ключи аналитики в сборку не подставляются.
 
-<!-- Transparent pixel to create line break after floating image -->
+## Лицензия
 
-<img width="2000" height="0" src="https://github.com/user-attachments/assets/ee14e6f7-20b8-4391-9091-8e8e25561929"><br>
-
-<img align="left" width="360" src="https://github.com/user-attachments/assets/7fdf41e6-281a-4b4b-ac19-020b838b6970">
-
-### Add Context
-
-**`@url`:** Paste in a URL for the extension to fetch and convert to markdown, useful when you want to give Cline the latest docs
-
-**`@problems`:** Add workspace errors and warnings ('Problems' panel) for Cline to fix
-
-**`@file`:** Adds a file's contents so you don't have to waste API requests approving read file (+ type to search files)
-
-**`@folder`:** Adds folder's files all at once to speed up your workflow even more
-
-<!-- Transparent pixel to create line break after floating image -->
-
-<img width="2000" height="0" src="https://github.com/user-attachments/assets/ee14e6f7-20b8-4391-9091-8e8e25561929"><br>
-
-<img align="right" width="350" src="https://github.com/user-attachments/assets/140c8606-d3bf-41b9-9a1f-4dbf0d4c90cb">
-
-### Checkpoints: Compare and Restore
-
-As Cline works through a task, the extension takes a snapshot of your workspace at each step. You can use the 'Compare' button to see a diff between the snapshot and your current workspace, and the 'Restore' button to roll back to that point.
-
-For example, when working with a local web server, you can use 'Restore Workspace Only' to quickly test different versions of your app, then use 'Restore Task and Workspace' when you find the version you want to continue building from. This lets you safely explore different approaches without losing progress.
-
-<!-- Transparent pixel to create line break after floating image -->
-
-<img width="2000" height="0" src="https://github.com/user-attachments/assets/ee14e6f7-20b8-4391-9091-8e8e25561929"><br>
-
-## Contributing
-
-To contribute to the project, start with our [Contributing Guide](../../CONTRIBUTING.md) to learn the basics. You can also join our [Discord](https://discord.gg/cline) to chat with other contributors in the `#contributors` channel. If you're looking for full-time work, check out our open positions on our [careers page](https://cline.bot/join-us)!
-
-## Enterprise
-
-Get the same Cline experience with enterprise-grade controls: SSO (SAML/OIDC), global policies and configuration, observability with audit trails, private networking (VPC/private link), and self-hosted or on-prem deployments, and enterprise support. Learn more at our [enterprise page](https://cline.bot/enterprise) or [talk to us](https://cline.bot/contact-sales).
-
-
-## License
-
-[Apache 2.0 © 2026 Cline Bot Inc.](./LICENSE)
+Apache License 2.0. TKBK Agent основан на [Cline](https://github.com/cline/cline) © Cline Bot Inc.; см. [LICENSE](https://github.com/tkbk-online/tkbk-agent/blob/main/apps/vscode/LICENSE) и [NOTICE](https://github.com/tkbk-online/tkbk-agent/blob/main/NOTICE). Товарные знаки TKBK принадлежат TKBK.

@@ -1,7 +1,7 @@
-# Beyond Autocomplete: True Agentic Planning
+# Не автодополнение, а план
 
-**Cline analyzes your request, explores your code, and presents a clear plan.**
+**TKBK Agent разбирает запрос, изучает код и показывает план до того, как что-то менять.**
 
-Watch Cline break down complex tasks, ask clarifying questions, and outline its approach. Understand the 'why' before any code is written, ensuring changes align with your architecture and intent.
+Опишите цель своими словами: «добавь экспорт заказов в CSV», «почини падающий тест», «перенеси конфиг в env». Агент разложит задачу на шаги, задаст уточняющие вопросы и объяснит, почему делает именно так. Режим «План» — для обсуждения, режим «Действие» — для выполнения.
 
-![Cline planning demonstration](https://storage.googleapis.com/cline_public_images/docs/assets/cline-plan-hifi-1_compress.webp)
+![Планирование задачи](https://storage.googleapis.com/cline_public_images/docs/assets/cline-plan-hifi-1_compress.webp)

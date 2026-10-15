@@ -1137,6 +1137,7 @@ describe("sdk-gateway", () => {
 			"qwen",
 			"qwen-code",
 			"sapaicore",
+			"tkbk",
 			"vercel-ai-gateway",
 			"vertex",
 		]);

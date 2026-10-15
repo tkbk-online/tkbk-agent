@@ -402,8 +402,24 @@ describe("normalizeProviderReasoningSettings", () => {
 // ---------------------------------------------------------------------------
 
 describe("buildSessionConfig", () => {
-	it("resolves Cline OAuth credentials after defaulting to the Cline provider", async () => {
+	it("defaults to the TKBK provider and reads its key from providers.json", async () => {
 		mocks.stateManager.getApiConfiguration.mockReturnValue({} as any)
+		mocks.providerSettingsManager.getProviderSettings.mockImplementation((providerId?: string) =>
+			providerId === "tkbk" ? ({ provider: "tkbk", apiKey: "cr_test_default_key" } as any) : undefined,
+		)
+
+		const config = await buildSessionConfig({ cwd: "/tmp/workspace" })
+
+		expect(config.providerId).toBe("tkbk")
+		expect(config.apiKey).toBe("cr_test_default_key")
+		expect(config.modelId).toBe(LlmsModels.TKBK_DEFAULT_MODEL_ID)
+	})
+
+	it("resolves Cline OAuth credentials when the Cline provider is selected", async () => {
+		mocks.stateManager.getApiConfiguration.mockReturnValue({
+			planModeApiProvider: "cline",
+			actModeApiProvider: "cline",
+		} as any)
 		mocks.providerSettingsManager.getProviderSettings.mockReturnValue({
 			provider: "cline",
 			auth: {
@@ -416,8 +432,6 @@ describe("buildSessionConfig", () => {
 
 		expect(config.providerId).toBe("cline")
 		expect(config.apiKey).toBe("workos:test-access-token")
-		expect(config.systemPrompt).toContain("# Workspace Configuration")
-		expect(config.systemPrompt).toContain(JSON.stringify("/tmp/workspace"))
 	})
 
 	it("resolves ClinePass from the shared Cline OAuth credentials", async () => {

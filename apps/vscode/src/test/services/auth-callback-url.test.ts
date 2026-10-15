@@ -77,7 +77,7 @@ describe("Auth Callback URL", () => {
 		})
 
 		it("should encode vscode:// callback URLs correctly", () => {
-			const desktopCallback = "vscode://saoudrizwan.claude-dev/openrouter"
+			const desktopCallback = "vscode://tkbk-online.tkbk-agent/openrouter"
 
 			const authUrl = new URL("https://openrouter.ai/auth")
 			authUrl.searchParams.set("callback_url", desktopCallback)

@@ -8,6 +8,8 @@
 import { GENERATED_PROVIDER_IDS } from "./provider-ids.generated";
 
 export enum BUILT_IN_PROVIDER {
+	// TKBK gateway (default provider of TKBK Agent)
+	TKBK = "tkbk",
 	// First-party
 	ANTHROPIC = "anthropic",
 	CLAUDE_CODE = "claude-code",

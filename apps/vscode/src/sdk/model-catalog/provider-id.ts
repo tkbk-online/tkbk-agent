@@ -11,6 +11,7 @@ import type { KnownProviderId, ProviderId } from "./contracts"
  * different spelling normalize at the SDK boundary.
  */
 const KNOWN_API_PROVIDERS = {
+	tkbk: true,
 	anthropic: true,
 	"claude-code": true,
 	openrouter: true,

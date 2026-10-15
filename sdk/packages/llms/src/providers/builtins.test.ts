@@ -623,3 +623,62 @@ describe("regional API line base URLs", () => {
 		}
 	});
 });
+
+describe("tkbk builtin spec", () => {
+	it("registers the TKBK gateway as an OpenAI-compatible provider with per-model protocol routing", async () => {
+		const spec = BUILTIN_SPECS.find((s) => s.id === "tkbk");
+		expect(spec).toBeDefined();
+		expect(spec?.family).toBe("openai-compatible");
+		expect(spec?.defaults?.baseUrl).toBe("https://api.tkbk.online/v1");
+		expect(spec?.apiKeyEnv).toEqual(["TKBK_API_KEY"]);
+
+		const manifest = BUILTIN_PROVIDER_MANIFESTS_BY_ID.tkbk;
+		expect(manifest.metadata?.routing?.modelApiProtocol).toBe(true);
+		expect(manifest.metadata?.routing?.promptCache?.format).toBe(
+			"anthropic-cache-control",
+		);
+		expect(manifest.metadata?.routing?.reasoning?.format).toBe(
+			"anthropic-thinking",
+		);
+
+		await expect(getProvider("tkbk")).resolves.toMatchObject({
+			id: "tkbk",
+			name: "TKBK",
+			defaultModelId: "claude-sonnet-5",
+			baseUrl: "https://api.tkbk.online/v1",
+		});
+	});
+
+	it("bundles the TKBK catalog and marks Claude models as Anthropic Messages", async () => {
+		const models = await getModelsForProvider("tkbk");
+		expect(Object.keys(models).sort()).toEqual(
+			[
+				"claude-fable-5-1",
+				"claude-opus-5-5",
+				"claude-sonnet-5",
+				"deepseek-v4-pro",
+				"glm-5.3",
+				"gpt-6.1-sol",
+				"grok-4.7",
+			].sort(),
+		);
+		for (const id of ["claude-sonnet-5", "claude-opus-5-5", "claude-fable-5-1"]) {
+			expect(models[id]?.metadata?.apiProtocol).toBe("anthropic");
+		}
+		for (const id of ["gpt-6.1-sol", "deepseek-v4-pro", "glm-5.3", "grok-4.7"]) {
+			expect(models[id]?.metadata?.apiProtocol).toBeUndefined();
+		}
+		// Model facts are copied from the vendor catalogs, not stubbed.
+		expect(models["claude-sonnet-5"]?.contextWindow).toBeGreaterThan(100_000);
+		expect(models["deepseek-v4-pro"]?.contextWindow).toBeGreaterThan(0);
+	});
+
+	it("ranks TKBK first in the provider list", () => {
+		const manifest = BUILTIN_PROVIDER_MANIFESTS_BY_ID.tkbk;
+		expect(manifest.metadata?.popularRank).toBe(0);
+		expect(manifest.capabilities).toContain("popular");
+		const clineRank = BUILTIN_PROVIDER_MANIFESTS_BY_ID.cline.metadata?.popularRank;
+		expect(typeof clineRank).toBe("number");
+		expect(0).toBeLessThan(clineRank as number);
+	});
+});

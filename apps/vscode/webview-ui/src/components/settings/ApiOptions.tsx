@@ -42,6 +42,7 @@ import { QwenCodeProvider } from "./providers/QwenCodeProvider"
 import { QwenProvider } from "./providers/QwenProvider"
 import { RequestyProvider } from "./providers/RequestyProvider"
 import { SapAiCoreProvider } from "./providers/SapAiCoreProvider"
+import { TkbkProvider } from "./providers/TkbkProvider"
 import { VercelAIGatewayProvider } from "./providers/VercelAIGatewayProvider"
 import { VertexProvider } from "./providers/VertexProvider"
 import { VSCodeLmProvider } from "./providers/VSCodeLmProvider"
@@ -370,6 +371,10 @@ const ApiOptions = ({
 
 			{apiConfiguration && selectedProvider === "asksage" && (
 				<AskSageProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
+			)}
+
+			{apiConfiguration && selectedProvider === "tkbk" && (
+				<TkbkProvider currentMode={currentMode} isPopup={isPopup} showModelOptions={showModelOptions} />
 			)}
 
 			{apiConfiguration && selectedProvider === "anthropic" && (

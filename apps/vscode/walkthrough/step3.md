@@ -1,7 +1,9 @@
-# Always Use the Best Models
+# Модели по одному ключу TKBK
 
-**Connect your keys for Anthropic (Claude), Google (Gemini), OpenAI (GPT), and other leading LLMs.**
+**Claude, GPT, DeepSeek, GLM и Grok — без зарубежных карт и отдельных аккаунтов.**
 
-Cline puts you at the forefront of AI. Bring your own API keys for leading models like Anthropic (Claude), Google (Gemini), and OpenAI (GPT). Always leverage the most powerful State-of-the-Art (SOTA) capabilities, ensuring you control both cost and cutting-edge performance.
+1. В настройках провайдера нажмите **«Войти через Telegram-бота»** — откроется tkbk.online/login.
+2. Подтвердите вход в боте, скопируйте ключ `cr_…` из кабинета и вставьте его в поле «Ключ TKBK».
+3. Выберите модель. Для сложной архитектуры — Claude Opus 5.5 или Fable 5.1, для повседневного кода — Claude Sonnet 5, для экономии — DeepSeek V4 Pro или GLM-5.3.
 
-![Cline Models Demo](https://storage.googleapis.com/cline_public_images/docs/assets/clines-models-hifi-3_compress.webp)
+Нет ключа — кнопка **«Купить ключ»**: оплата в рублях, ключ приходит сразу. Баланс и расход видны в кабинете до цента. Свой ключ OpenAI, Anthropic или Gemini тоже можно использовать — выберите другого провайдера в списке.

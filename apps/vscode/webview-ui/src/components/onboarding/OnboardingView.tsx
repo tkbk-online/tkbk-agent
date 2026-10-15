@@ -28,6 +28,7 @@ import {
 	type OnboardingModelsByGroup,
 } from "./data-models"
 import { getUserTypeSelections, NEW_USER_TYPE, STEP_CONFIG } from "./data-steps"
+import { TkbkOnboardingView } from "./TkbkOnboardingView"
 import { useOnboardingModels } from "./useOnboardingModels"
 
 type OnboardingPage =
@@ -696,7 +697,12 @@ const OnboardingWelcomeFallback = () => {
 	return <WelcomeView />
 }
 
-const OnboardingView = () => {
+/**
+ * Cline's account-based onboarding (free / ClinePass / frontier / BYOK). Kept
+ * for reference and for hosts that still want it; TKBK Agent ships
+ * {@link TkbkOnboardingView} as the default welcome screen.
+ */
+export const ClineOnboardingView = () => {
 	const { status, models } = useOnboardingModels()
 
 	if (status === "loading") {
@@ -713,5 +719,7 @@ const OnboardingView = () => {
 
 	return <OnboardingViewContent onboardingModels={models} />
 }
+
+const OnboardingView = () => <TkbkOnboardingView />
 
 export default OnboardingView

@@ -1,4 +1,25 @@
 <p align="center">
+  <img src="apps/vscode/assets/icons/icon.png" width="80" alt="TKBK Agent" />
+</p>
+
+<h1 align="center">TKBK Agent</h1>
+
+<p align="center">
+Расширение-агент для VS Code под брендом <a href="https://tkbk.online">TKBK</a>: Claude, GPT, DeepSeek, GLM и Grok по одному ключу, оплата в рублях, вход через Telegram-бота.
+</p>
+
+<p align="center">
+<a href="apps/vscode/README.md"><strong>Установка и описание</strong></a> ·
+<a href="docs/tkbk/OPEN-VSX.md">Публикация в Open VSX</a> ·
+<a href="docs/tkbk/OWNER-TODO.md">Что требует владельца</a> ·
+<a href="https://github.com/tkbk-online/tkbk-mcp">MCP-серверы TKBK</a>
+</p>
+
+Это форк открытого агента [Cline](https://github.com/cline/cline) (Apache 2.0, © Cline Bot Inc.) с провайдером TKBK по умолчанию, русским экраном первого запуска и стартовыми скилами для Wildberries/Ozon, Битрикс24 и amoCRM. Код расширения — в `apps/vscode`, SDK — в `sdk/`. Атрибуция и перечень изменений — в [NOTICE](NOTICE). Ниже — README исходного проекта Cline.
+
+---
+
+<p align="center">
   <img src="assets/icons/icon.png" width="80" alt="Cline" />
 </p>
 

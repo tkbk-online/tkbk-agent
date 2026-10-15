@@ -1,9 +1,15 @@
 export {
 	getGeneratedModelsForRuntimeProvider,
 	isProviderApiLine,
+	isTkbkAnthropicModelId,
 	OLLAMA_DEFAULT_CONTEXT_WINDOW,
 	type ProviderApiLine,
 	resolveProviderApiLineBaseUrl,
+	TKBK_API_BASE_URL,
+	TKBK_BUNDLED_MODELS,
+	TKBK_DEFAULT_MODEL_ID,
+	TKBK_MODELS_SOURCE_URL,
+	TKBK_PROVIDER_ID,
 } from "./providers/builtins";
 export {
 	type ApiHandler,

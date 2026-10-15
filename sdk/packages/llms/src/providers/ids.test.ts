@@ -7,7 +7,12 @@ import {
 } from "./ai-sdk";
 import { BUILTIN_PROVIDER_REGISTRATIONS } from "./builtins-runtime";
 import { createGateway } from "./gateway";
-import { BUILT_IN_PROVIDER_IDS, normalizeProviderId } from "./ids";
+import {
+	BUILT_IN_PROVIDER,
+	BUILT_IN_PROVIDER_IDS,
+	isBuiltInProviderId,
+	normalizeProviderId,
+} from "./ids";
 import {
 	getModelsForProvider,
 	getProvider,
@@ -250,5 +255,12 @@ describe("provider-ids", () => {
 		await expect(registration?.loadProvider?.()).resolves.toMatchObject({
 			createProvider: createSapAiCoreProvider,
 		});
+	});
+});
+
+describe("tkbk provider id", () => {
+	it("is a built-in provider id", () => {
+		expect(BUILT_IN_PROVIDER.TKBK).toBe("tkbk");
+		expect(isBuiltInProviderId("tkbk")).toBe(true);
 	});
 });

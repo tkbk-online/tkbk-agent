@@ -3,6 +3,7 @@
 
 import assert from "node:assert"
 import { disableCurrentDirectoryExecutableSearch } from "@cline/shared"
+import { resolveTkbkSkillsDirPath } from "@cline/shared/storage"
 import * as vscode from "vscode"
 import { Logger } from "@/shared/services/Logger"
 import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
@@ -52,6 +53,7 @@ import { VscodeWebviewProvider } from "./hosts/vscode/VscodeWebviewProvider"
 import { exportVSCodeStorageToSharedFiles } from "./hosts/vscode/vscode-to-file-migration"
 import { ExtensionRegistryInfo } from "./registry"
 import { AuthService, LogoutReason } from "./sdk/auth-service"
+import { installStarterSkills } from "./services/skills/tkbk-starter-skills"
 import { telemetryService } from "./services/telemetry"
 import type { RolloutBundleActivation } from "./services/telemetry/rollout-metadata"
 import { LG_TASK_URI_PATH, SharedUriHandler, TASK_URI_PATH } from "./services/uri/SharedUriHandler"
@@ -90,6 +92,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 4. Register services and perform common initialization
 	// IMPORTANT: Must be done after host provider is setup and migrations are complete
 	const webview = (await initialize(storageContext)) as VscodeWebviewProvider
+
+	// 4b. Seed the bundled TKBK starter skills into ~/.tkbk/skills. Runs in the
+	// background and never overwrites skills the person already has.
+	void installStarterSkills(path.join(context.extensionPath, "skills"), resolveTkbkSkillsDirPath())
+		.then((result) => {
+			if (result.installed.length > 0) {
+				Logger.log(`[TKBK] Installed starter skills: ${result.installed.join(", ")}`)
+			}
+		})
+		.catch((error) => Logger.warn("[TKBK] Failed to install starter skills:", error))
 
 	// 5. Register services and commands specific to VS Code
 	// Initialize hook discovery cache for performance optimization

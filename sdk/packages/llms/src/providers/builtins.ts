@@ -762,11 +762,113 @@ const clinePass = createClineLikeSpec({
 });
 
 /**
+ * TKBK (https://tkbk.online) — one `cr_…` key for Claude, GPT, DeepSeek, GLM
+ * and Grok through a single gateway. The gateway serves both wire formats
+ * under one base URL: Anthropic Messages at `/v1/messages` and OpenAI chat
+ * completions at `/v1/chat/completions`. Claude models carry
+ * `metadata.apiProtocol: "anthropic"` so `routing.modelApiProtocol` sends
+ * them through the native Anthropic adapter (prompt caching, extended
+ * thinking); everything else goes through the OpenAI-compatible adapter.
+ */
+export const TKBK_PROVIDER_ID = "tkbk";
+export const TKBK_API_BASE_URL = "https://api.tkbk.online/v1";
+export const TKBK_MODELS_SOURCE_URL = "https://api.tkbk.online/v1/models";
+export const TKBK_DEFAULT_MODEL_ID = "claude-sonnet-5";
+
+/**
+ * Bundled TKBK catalog. `source` names the generated models.dev catalog the
+ * model facts (context window, pricing, capabilities) are copied from, so the
+ * entries stay in sync with upstream regeneration. Prices equal the dollar
+ * "volume" the TKBK cabinet bills 1:1, so they are kept as-is.
+ */
+export const TKBK_BUNDLED_MODELS: readonly {
+	id: string;
+	name: string;
+	source: string;
+	apiProtocol?: "anthropic";
+}[] = [
+	{
+		id: "claude-sonnet-5",
+		name: "Claude Sonnet 5",
+		source: "anthropic",
+		apiProtocol: "anthropic",
+	},
+	{
+		id: "claude-opus-5-5",
+		name: "Claude Opus 5.5",
+		source: "anthropic",
+		apiProtocol: "anthropic",
+	},
+	{
+		id: "claude-fable-5-1",
+		name: "Claude Fable 5.1",
+		source: "anthropic",
+		apiProtocol: "anthropic",
+	},
+	{ id: "gpt-6.1-sol", name: "GPT-6.1 Sol", source: "openai-native" },
+	{ id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", source: "deepseek" },
+	{ id: "glm-5.3", name: "GLM-5.3", source: "zai" },
+	{ id: "grok-4.7", name: "Grok 4.7", source: "xai" },
+];
+
+/** Claude models on the TKBK gateway speak Anthropic Messages. */
+export function isTkbkAnthropicModelId(modelId: string): boolean {
+	return /^claude[-_]/i.test(modelId.trim());
+}
+
+function buildTkbkModels(): Record<string, ModelInfo> {
+	const models: Record<string, ModelInfo> = {};
+	for (const entry of TKBK_BUNDLED_MODELS) {
+		const upstream = getGeneratedModelsForProvider(entry.source)[entry.id];
+		const info: ModelInfo = upstream
+			? { ...upstream, id: entry.id, name: entry.name }
+			: {
+					id: entry.id,
+					name: entry.name,
+					contextWindow: 200_000,
+					maxInputTokens: 200_000,
+					maxTokens: 32_000,
+					capabilities: ["streaming", "tools", "images", "reasoning"],
+					status: "active",
+				};
+		if (entry.apiProtocol) {
+			info.metadata = { ...info.metadata, apiProtocol: entry.apiProtocol };
+		}
+		models[entry.id] = info;
+	}
+	return models;
+}
+
+const TKBK_ROUTING_METADATA: GatewayProviderMetadata = {
+	routing: {
+		...ANTHROPIC_ROUTING_METADATA.routing,
+		modelApiProtocol: true,
+	},
+};
+
+const tkbk: BuiltinSpecOverride = {
+	id: TKBK_PROVIDER_ID,
+	name: "TKBK",
+	description:
+		"Шлюз TKBK: Claude, GPT, DeepSeek, GLM и Grok по одному ключу cr_…, оплата в рублях",
+	family: "openai-compatible",
+	popular: 0,
+	capabilities: ["tools", "reasoning", "prompt-cache"],
+	defaultModelId: TKBK_DEFAULT_MODEL_ID,
+	modelsFactory: buildTkbkModels,
+	apiKeyEnv: ["TKBK_API_KEY"],
+	docsUrl: "https://tkbk.online/docs",
+	defaults: { baseUrl: TKBK_API_BASE_URL },
+	metadata: TKBK_ROUTING_METADATA,
+};
+
+/**
  * Handwritten providers plus generated providers that require Cline-specific
  * runtime or product policy. Providers fully described by models.dev must not
  * be duplicated here.
  */
 const OPENAI_COMPATIBLE_SPEC_OVERRIDES: BuiltinSpecOverride[] = [
+	tkbk,
 	{
 		// Keep the persisted provider ID and credentials compatible while the
 		// upstream catalog adopts the CoreWeave display name.

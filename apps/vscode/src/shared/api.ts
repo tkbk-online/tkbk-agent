@@ -3,6 +3,7 @@ import { ApiFormat } from "./proto/cline/models"
 import type { ApiHandlerSettings } from "./storage/state-keys"
 
 export type ApiProvider =
+	| "tkbk"
 	| "anthropic"
 	| "claude-code"
 	| "openrouter"
@@ -54,7 +55,7 @@ export type ApiProvider =
 	| "chutes"
 	| "aiand"
 
-export const DEFAULT_API_PROVIDER = "openrouter" as ApiProvider
+export const DEFAULT_API_PROVIDER = "tkbk" as ApiProvider
 
 export interface ApiHandlerOptions extends Partial<ApiHandlerSettings> {
 	ulid?: string // Used to identify the task in API requests

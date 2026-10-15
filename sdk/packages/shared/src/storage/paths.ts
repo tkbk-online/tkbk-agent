@@ -47,6 +47,12 @@ const CLAUDE_CONFIG_DIR = ".claude";
  */
 const LEGACY_AGENT_SKILLS_CONFIG_DIR = ".agents";
 const AGENTS_CONFIG_DIR = LEGACY_AGENT_SKILLS_CONFIG_DIR;
+/**
+ * TKBK Agent's own project directory. Skills written for TKBK Agent live in
+ * `<workspace>/.tkbk/skills` and `~/.tkbk/skills` (Agent Skills `SKILL.md`
+ * format), alongside every directory Cline already scans.
+ */
+export const TKBK_CONFIG_DIR = ".tkbk";
 
 export const AGENT_CONFIG_DIRECTORY_NAME = "agents";
 export const HOOKS_CONFIG_DIRECTORY_NAME = "hooks";
@@ -470,6 +476,7 @@ function getWorkspaceSkillDirectories(workspacePath?: string): string[] {
 		return [];
 	}
 	return [
+		TKBK_CONFIG_DIR,
 		DEPRECATED_CONFIG_DIR,
 		CLINE_CONFIG_DIR,
 		CLAUDE_CONFIG_DIR,
@@ -508,11 +515,25 @@ export function resolveHooksConfigSearchPaths(
 	return dedupePaths(hooks);
 }
 
+/** Global TKBK skills: `~/.tkbk/skills` (TKBK_DIR overrides the home root). */
+export function resolveTkbkDir(): string {
+	const envDir = process.env.TKBK_DIR?.trim();
+	if (envDir) {
+		return envDir;
+	}
+	return join(HOME_DIR, TKBK_CONFIG_DIR);
+}
+
+export function resolveTkbkSkillsDirPath(): string {
+	return join(resolveTkbkDir(), SKILLS_CONFIG_DIRECTORY_NAME);
+}
+
 export function resolveSkillsConfigSearchPaths(
 	workspacePath?: string,
 ): string[] {
 	return dedupePaths([
 		...getWorkspaceSkillDirectories(workspacePath),
+		resolveTkbkSkillsDirPath(),
 		join(resolveClineDir(), SKILLS_CONFIG_DIRECTORY_NAME),
 		join(
 			HOME_DIR,

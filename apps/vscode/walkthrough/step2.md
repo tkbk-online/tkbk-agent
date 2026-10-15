@@ -1,7 +1,7 @@
-# Deep Codebase Intelligence
+# Понимание проекта
 
-**Cline starts with broad context and explores deeply where needed.**
+**Агент начинает с общей картины и углубляется там, где нужно.**
 
-Cline is designed with inherent codebase intelligence. It doesn't operate in a vacuum, but starts with a structural understanding of your project. Before making changes, it performs targeted agentic exploration to gain any additional specific context required, ensuring its actions are always well-informed and aligned with your architecture.
+Перед правками TKBK Agent смотрит структуру проекта, ищет по коду, читает связанные файлы и следит за ошибками линтера и компилятора. Правки получаются в духе вашей архитектуры, а не «в вакууме». Правила проекта можно описать в `.tkbk/rules` или `.clinerules`.
 
-![Cline Deep Codebase Intelligence Demo](https://storage.googleapis.com/cline_public_images/docs/assets/cline-reading-codebase-hifi-2_compress.webp)
+![Агент читает проект](https://storage.googleapis.com/cline_public_images/docs/assets/cline-reading-codebase-hifi-2_compress.webp)

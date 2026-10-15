@@ -1,0 +1,4 @@
+
+# Local Windows protoc (see scripts/build-proto.mjs LEGACY_WINDOWS_PROTOC)
+tmp-protoc/
+*.vsix

@@ -7,6 +7,7 @@ type GenericProviderPresentationOverride = Pick<GenericProviderSettingsConfig, "
 	Partial<Pick<GenericProviderSettingsConfig, "allowsCustomIds">>
 
 const CUSTOM_PROVIDER_SETTINGS_IDS = new Set([
+	"tkbk",
 	"aihubmix",
 	"anthropic",
 	"asksage",

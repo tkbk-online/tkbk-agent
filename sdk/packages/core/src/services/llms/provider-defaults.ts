@@ -647,6 +647,87 @@ async function fetchLiteLlmPrivateModels(
 	);
 }
 
+interface TkbkModelResponse {
+	id?: string;
+	name?: string;
+	display_name?: string;
+	context_window?: number;
+	context_length?: number;
+	max_output_tokens?: number;
+}
+
+const TKBK_DEFAULT_MODELS_URL = "https://api.tkbk.online/v1/models";
+
+function resolveTkbkModelsUrl(baseUrl: string | undefined): string {
+	const trimmed = normalizeBaseUrl(baseUrl).replace(/\/+$/, "");
+	if (!trimmed) {
+		return TKBK_DEFAULT_MODELS_URL;
+	}
+	return `${trimmed}/models`;
+}
+
+/**
+ * TKBK publishes its catalog at `GET /v1/models` (OpenAI list shape), gated by
+ * the `cr_…` key. Bundled TKBK entries keep their richer facts (pricing,
+ * context window, Anthropic wire protocol for Claude); ids the bundle does not
+ * know yet are added with the gateway's protocol inferred from the id.
+ */
+async function fetchTkbkPrivateModels(
+	config: ProviderConfig,
+	token: string,
+): Promise<Record<string, ModelInfo>> {
+	const response = await fetchWithTimeout(resolveTkbkModelsUrl(config.baseUrl), {
+		method: "GET",
+		headers: {
+			Authorization: `Bearer ${token}`,
+			Accept: "application/json",
+		},
+	});
+	if (!response.ok) {
+		throw new Error(`TKBK model refresh failed: HTTP ${response.status}`);
+	}
+
+	const payload = (await response.json()) as
+		| { data?: TkbkModelResponse[]; models?: TkbkModelResponse[] }
+		| TkbkModelResponse[];
+	const entries = Array.isArray(payload)
+		? payload
+		: (payload?.data ?? payload?.models ?? []);
+	const bundled =
+		Llms.MODEL_COLLECTIONS_BY_PROVIDER_ID[Llms.TKBK_PROVIDER_ID]?.models ?? {};
+	const models: Record<string, ModelInfo> = {};
+	for (const model of entries) {
+		const id = model.id?.trim();
+		if (!id) {
+			continue;
+		}
+		if (
+			id.includes("whisper") ||
+			id.includes("tts") ||
+			id.includes("embedding")
+		) {
+			continue;
+		}
+		const known = bundled[id];
+		if (known) {
+			models[id] = { ...known };
+			continue;
+		}
+		const contextWindow = model.context_window ?? model.context_length;
+		const info = buildModelFromPrivateSource(id, {
+			name: model.display_name ?? model.name ?? id,
+			contextWindow,
+			maxInputTokens: contextWindow,
+			maxTokens: model.max_output_tokens,
+		});
+		if (Llms.isTkbkAnthropicModelId(id)) {
+			info.metadata = { ...info.metadata, apiProtocol: "anthropic" };
+		}
+		models[id] = info;
+	}
+	return models;
+}
+
 type PrivateProviderModelFetcher = (
 	config: ProviderConfig,
 	token: string,
@@ -660,6 +741,7 @@ const PRIVATE_PROVIDER_MODEL_FETCHERS: Record<
 	hicap: fetchHicapPrivateModels,
 	litellm: fetchLiteLlmPrivateModels,
 	poolside: fetchPoolsidePrivateModels,
+	tkbk: fetchTkbkPrivateModels,
 };
 
 /**

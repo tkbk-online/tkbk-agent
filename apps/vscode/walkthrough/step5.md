@@ -1,7 +1,7 @@
-# No Black Box: Full Visibility & Control
+# Контроль всегда у вас
 
-**Cline operates with complete transparency, showing you every file read and every proposed diff.**
+**Ни одного изменения без вашего «да».**
 
-Understand exactly what Cline is doing and why—no obfuscation. Review all actions and approve changes before they're made. Cline uses checkpoints, allowing you to easily revert if needed, maintaining full control over your codebase. With BYO-key, you also have clear cost transparency.
+Каждая правка файла показывается диффом до применения, каждая команда в терминале — до запуска. Можно отредактировать изменения прямо в диффе, откатить или попросить переделать. Авто-подтверждение для рутинных действий включается отдельно и только для того, чему вы доверяете.
 
-![Cline Transparency Demo](https://storage.googleapis.com/cline_public_images/docs/assets/clines-transparency-hifi-5_compress.webp)
+Все изменения агента попадают в Timeline файла в VS Code — их легко просмотреть и вернуть.

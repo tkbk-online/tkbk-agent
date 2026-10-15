@@ -49,6 +49,16 @@
 		"onUri",
 		"onStartupFinished"
 	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": "limited",
+			"description": "В ограниченном режиме TKBK Agent работает, но не выполняет команды в терминале и хуки до тех пор, пока папке не будет выдано доверие."
+		},
+		"virtualWorkspaces": {
+			"supported": "limited",
+			"description": "В виртуальных рабочих областях недоступны терминал, браузер и чекпоинты."
+		}
+	},
 	"main": "./dist/extension.js",
 	"contributes": {
 		"icons": {

@@ -1708,7 +1708,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								"Cloud sessions only support Act mode for now."
 							) : (
 								<>
-									{`In ${shownTooltipMode === "act" ? "Act" : "Plan"}  mode, Cline will ${shownTooltipMode === "act" ? "complete the task immediately" : "gather information to architect a plan"}`}
+									{`In ${shownTooltipMode === "act" ? "Act" : "Plan"}  mode, TKBK Agent will ${shownTooltipMode === "act" ? "complete the task immediately" : "gather information to architect a plan"}`}
 									<p className="text-description/80 text-xs mb-0">
 										Toggle w/ <kbd className="text-muted-foreground mx-1">{togglePlanActKeys}</kbd>
 									</p>

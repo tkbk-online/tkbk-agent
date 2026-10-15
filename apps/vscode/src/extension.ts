@@ -39,6 +39,7 @@ import {
 	migrateWelcomeViewCompleted,
 	migrateWorkspaceToGlobalStorage,
 } from "./core/storage/state-migrations"
+import { setWorkspaceTrusted } from "./core/storage/workspace-trust"
 import { workspaceResolver } from "./core/workspace"
 import { findMatchingNotebookCell, getContextForCommand, showWebview } from "./hosts/vscode/commandUtils"
 import { abortCommitGeneration, generateCommitMsg } from "./hosts/vscode/commit-message-generator"
@@ -73,6 +74,16 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Before anything spawns with the workspace as cwd (rg, git, hooks, MCP).
 	disableCurrentDirectoryExecutableSearch()
+
+	// Restricted Mode: the agent stays usable, but hook scripts from the open
+	// folder wait until the person trusts it (see capabilities.untrustedWorkspaces).
+	setWorkspaceTrusted(vscode.workspace.isTrusted)
+	context.subscriptions.push(
+		vscode.workspace.onDidGrantWorkspaceTrust(() => {
+			setWorkspaceTrusted(true)
+			HookDiscoveryCache.getInstance().invalidateAll()
+		}),
+	)
 
 	// 1. Set up HostProvider for VSCode
 	// IMPORTANT: This must be done before any service can be registered

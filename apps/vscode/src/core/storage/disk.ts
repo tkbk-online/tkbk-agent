@@ -10,6 +10,7 @@ import { HostProvider } from "@/hosts/host-provider"
 import { Logger } from "@/shared/services/Logger"
 import { resolveTkbkHomeDir } from "@/shared/storage/tkbk-home"
 import { getDocumentsPath } from "./documents-path"
+import { isWorkspaceTrusted } from "./workspace-trust"
 
 export { getDocumentsPath } from "./documents-path"
 
@@ -312,9 +313,13 @@ export async function getAllHooksDirs(workspaceRootPaths?: string[]): Promise<st
 		hooksDirs.push(globalHooksDir)
 	}
 
-	// Add workspace hooks directories
-	const workspaceHooksDirs = await getWorkspaceHooksDirs(workspaceRootPaths)
-	hooksDirs.push(...workspaceHooksDirs)
+	// Add workspace hooks directories — but never from a folder the person has
+	// not trusted yet (VS Code Restricted Mode): hook scripts come from the repo
+	// and would otherwise run as soon as the agent starts.
+	if (isWorkspaceTrusted()) {
+		const workspaceHooksDirs = await getWorkspaceHooksDirs(workspaceRootPaths)
+		hooksDirs.push(...workspaceHooksDirs)
+	}
 
 	return hooksDirs
 }

@@ -87,7 +87,7 @@ const SETTINGS_TABS: SettingsTab[] = [
 	{
 		id: "about",
 		name: "About",
-		tooltipText: "About Cline",
+		tooltipText: "О TKBK Agent",
 		headerText: "About",
 		icon: Info,
 	},

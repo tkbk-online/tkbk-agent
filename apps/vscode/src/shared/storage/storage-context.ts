@@ -1,8 +1,8 @@
 import fsSync from "node:fs"
 import path from "node:path"
-import { resolveTkbkHomeDir } from "@/shared/storage/tkbk-home"
 import { ClineFileStorage } from "./ClineFileStorage"
 import { ClineMemento } from "./ClineStorage"
+import { resolveTkbkHomeDir } from "./tkbk-home"
 
 /**
  * The storage backend context object used by StateManager and other components.

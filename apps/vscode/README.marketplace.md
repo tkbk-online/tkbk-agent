@@ -93,7 +93,7 @@ bun run package
 bunx vsce package --no-dependencies --out tkbk-agent-0.1.0.vsix
 ```
 
-На Windows встроенный `protoc` из `grpc-tools` может не запускаться (собран с отладочной библиотекой); положите официальный `protoc.exe` из [релизов protobuf](https://github.com/protocolbuffers/protobuf/releases) в `apps/vscode/tmp-protoc/bin/` — скрипт сборки подхватит его сам.
+На Windows встроенный `protoc` из `grpc-tools` может не запускаться (собран с отладочной библиотекой); распакуйте официальный архив `protoc-<версия>-win64.zip` из [релизов protobuf](https://github.com/protocolbuffers/protobuf/releases) целиком (папки `bin/` и `include/`) в `apps/vscode/tmp-protoc/` — скрипт сборки подхватит его сам.
 
 Тесты: `bun run test:unit` (расширение), `cd webview-ui && bun run test` (интерфейс), в `sdk/packages/*` — `bun run test`.
 

@@ -13,6 +13,7 @@ import { BannerService } from "@/services/banner/BannerService"
 import { featureFlagsService } from "@/services/feature-flags"
 import { getDistinctId } from "@/services/logging/distinctId"
 import { getExtensionVariant } from "@/services/telemetry/rollout-metadata"
+import { TkbkLicenseService } from "@/services/tkbk/license/TkbkLicenseService"
 import { getLatestAnnouncementId } from "@/utils/announcements"
 import { getClineOnboardingModels } from "../models/getClineOnboardingModels"
 
@@ -112,6 +113,7 @@ export async function getStateToPostToWebview(controller: {
 
 	return {
 		version,
+		tkbkLicense: TkbkLicenseService.get()?.view(),
 		extensionVariant: getExtensionVariant(),
 		apiConfiguration,
 		currentTaskItem,

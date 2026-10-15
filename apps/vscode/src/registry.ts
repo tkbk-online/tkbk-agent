@@ -24,6 +24,9 @@ const ClineCommands = {
 	ImproveCode: prefix + ".improveCode",
 	FocusChatInput: prefix + ".focusChatInput",
 	Walkthrough: prefix + ".openWalkthrough",
+	// TKBK: the license of the saved key and the Pro-only cloud agent
+	RefreshLicense: prefix + ".refreshLicense",
+	CloudAgent: prefix + ".cloudAgent",
 	GenerateCommit: prefix + ".generateGitCommitMessage",
 	AbortCommit: prefix + ".abortGitCommitMessage",
 	// Jupyter Notebook commands

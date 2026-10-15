@@ -17,6 +17,7 @@ import { ClineMessageModelInfo } from "./messages"
 import { OnboardingModelGroup } from "./proto/cline/state"
 import { Mode } from "./storage/types"
 import { TelemetrySetting } from "./TelemetrySetting"
+import type { TkbkLicenseView } from "./tkbk/license"
 import { UserInfo } from "./UserInfo"
 // webview will hold state
 export interface ExtensionMessage {
@@ -40,6 +41,8 @@ export const COMMAND_CANCEL_TOKEN = "__cline_command_cancel__"
 
 export interface ExtensionState {
 	isNewUser: boolean
+	/** TKBK IDE plan of the saved key on this computer (services/tkbk/license) */
+	tkbkLicense?: TkbkLicenseView
 	welcomeViewCompleted: boolean
 	onboardingModels: OnboardingModelGroup | undefined
 	apiConfiguration?: ApiConfiguration

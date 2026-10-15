@@ -243,6 +243,16 @@
 				"command": "tkbk-agent.openWalkthrough",
 				"title": "Открыть знакомство с TKBK Agent",
 				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.refreshLicense",
+				"title": "Проверить план TKBK IDE (лицензию)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.cloudAgent",
+				"title": "Облачный агент (Pro)",
+				"category": "TKBK Agent"
 			}
 		],
 		"keybindings": [

@@ -2,8 +2,9 @@
 // Import the module and reference it with the alias vscode in your code below
 
 import assert from "node:assert"
+import { resolveProviderApiKeyFromSettings } from "@cline/core"
 import { disableCurrentDirectoryExecutableSearch } from "@cline/shared"
-import { resolveTkbkSkillsDirPath } from "@cline/shared/storage"
+import { resolveTkbkDir, resolveTkbkSkillsDirPath } from "@cline/shared/storage"
 import * as vscode from "vscode"
 import { Logger } from "@/shared/services/Logger"
 import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
@@ -55,11 +56,14 @@ import { exportVSCodeStorageToSharedFiles } from "./hosts/vscode/vscode-to-file-
 import { ExtensionRegistryInfo } from "./registry"
 import { AuthService, LogoutReason } from "./sdk/auth-service"
 import { onProviderSettingsSaved } from "./sdk/model-catalog/provider-settings-events"
+import { getProviderSettingsManager } from "./sdk/provider-migration"
 import { installStarterSkills } from "./services/skills/tkbk-starter-skills"
 import { telemetryService } from "./services/telemetry"
 import type { RolloutBundleActivation } from "./services/telemetry/rollout-metadata"
+import { TkbkLicenseService } from "./services/tkbk/license/TkbkLicenseService"
 import { LG_TASK_URI_PATH, SharedUriHandler, TASK_URI_PATH } from "./services/uri/SharedUriHandler"
 import { ShowMessageType } from "./shared/proto/host/window"
+import { featureLockText } from "./shared/tkbk/license"
 import { fileExistsAtPath } from "./utils/fs"
 
 export async function reportRolloutActivation(input: RolloutBundleActivation): Promise<void> {
@@ -105,15 +109,46 @@ export async function activate(context: vscode.ExtensionContext) {
 	// IMPORTANT: Must be done after host provider is setup and migrations are complete
 	const webview = (await initialize(storageContext)) as VscodeWebviewProvider
 
-	// 4b. Seed the bundled TKBK starter skills into ~/.tkbk/skills. Runs in the
-	// background and never overwrites skills the person already has.
-	void installStarterSkills(path.join(context.extensionPath, "skills"), resolveTkbkSkillsDirPath())
-		.then((result) => {
-			if (result.installed.length > 0) {
-				Logger.log(`[TKBK] Installed starter skills: ${result.installed.join(", ")}`)
+	// 4b. The TKBK IDE license of the saved key: checked on tkbk.online once a day, cached in ~/.tkbk,
+	// a week of offline grace. The webview reads it from the extension state (tkbkLicense).
+	const license = new TkbkLicenseService({
+		dir: resolveTkbkDir(),
+		version: ExtensionRegistryInfo.version,
+		getApiKey: () => {
+			try {
+				return resolveProviderApiKeyFromSettings(getProviderSettingsManager(), "tkbk")?.trim() ?? ""
+			} catch {
+				return ""
 			}
+		},
+		onChange: () => {
+			void webview.controller.postStateToWebview().catch(() => undefined)
+			void seedStarterSkills()
+		},
+		log: (message) => Logger.log(message),
+	})
+	TkbkLicenseService.set(license)
+	context.subscriptions.push({ dispose: () => license.dispose() })
+
+	// 4c. Seed the bundled TKBK starter skills into ~/.tkbk/skills. Runs in the background and never
+	// overwrites skills the person already has; premium skills only once the plan allows them.
+	const seedStarterSkills = () =>
+		installStarterSkills(path.join(context.extensionPath, "skills"), resolveTkbkSkillsDirPath(), {
+			premium: license.isUnlocked("premium_skills"),
 		})
-		.catch((error) => Logger.warn("[TKBK] Failed to install starter skills:", error))
+			.then((result) => {
+				if (result.installed.length > 0) {
+					Logger.log(`[TKBK] Installed starter skills: ${result.installed.join(", ")}`)
+				}
+			})
+			.catch((error) => Logger.warn("[TKBK] Failed to install starter skills:", error))
+	void license
+		.load()
+		.catch((error) => Logger.warn("[TKBK] License cache not read:", error))
+		.then(() => {
+			license.start()
+			return seedStarterSkills()
+		})
 
 	// 5. Register services and commands specific to VS Code
 	// Initialize hook discovery cache for performance optimization
@@ -496,6 +531,32 @@ ${ctx.cellJson || "{}"}
 				await improveWithCline(ctx.controller, ctx.commandContext, notebookContext)
 			},
 		),
+	)
+
+	// TKBK: re-check the plan by hand; the cloud agent is a Pro feature (the lock explains and links the purchase)
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.RefreshLicense, async () => {
+			const view = await license.refresh(true)
+			vscode.window.showInformationMessage(`TKBK IDE: ${view.planTitle}. ${view.message}`)
+		}),
+	)
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.CloudAgent, async () => {
+			if (!license.isUnlocked("cloud_agents")) {
+				const pick = await vscode.window.showWarningMessage(
+					featureLockText("cloud_agents", license.view()),
+					"Купить Pro",
+					"Проверить план",
+				)
+				if (pick === "Купить Pro") {
+					await vscode.env.openExternal(vscode.Uri.parse(license.view().buyUrl))
+				} else if (pick === "Проверить план") {
+					await vscode.commands.executeCommand(commands.RefreshLicense)
+				}
+				return
+			}
+			await vscode.env.openExternal(vscode.Uri.parse("https://tkbk.online/cloud"))
+		}),
 	)
 
 	// Register the openWalkthrough command handler

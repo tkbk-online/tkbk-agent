@@ -10,6 +10,7 @@ import { ModelInfoView } from "../common/ModelInfoView"
 import ReasoningEffortSelector from "../ReasoningEffortSelector"
 import { useProviderApiKeyField } from "../utils/useProviderApiKeyField"
 import { type ModelPickerSelection, ModelPickerWithManualEntry } from "./ModelPickerWithManualEntry"
+import { TkbkLicensePanel } from "./TkbkLicensePanel"
 
 export const TKBK_PROVIDER_ID = "tkbk"
 export const TKBK_LOGIN_URL = "https://tkbk.online/login"
@@ -97,6 +98,8 @@ export const TkbkProvider = ({ showModelOptions, isPopup, currentMode }: TkbkPro
 					</>
 				)}
 			</p>
+
+			{hasKey && <TkbkLicensePanel />}
 
 			{showModelOptions && (
 				<>

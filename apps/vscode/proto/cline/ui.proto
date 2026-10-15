@@ -305,4 +305,7 @@ service UiService {
 
   // Tracks intent signals before task creation or first model activity
   rpc trackIntent(IntentEvent) returns (Empty);
+
+  // TKBK: re-checks the license of the saved key on tkbk.online now; returns the view as JSON
+  rpc refreshTkbkLicense(EmptyRequest) returns (String);
 }

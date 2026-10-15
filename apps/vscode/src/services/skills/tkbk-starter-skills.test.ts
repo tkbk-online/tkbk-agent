@@ -32,6 +32,7 @@ describe("installStarterSkills", () => {
 
 		expect(result.installed).toEqual(["tkbk-amocrm", "tkbk-bitrix24"])
 		expect(result.skipped).toEqual([])
+		expect(result.locked).toEqual([])
 		expect(await readFile(path.join(target, "tkbk-amocrm", "SKILL.md"), "utf8")).toContain("name: tkbk-amocrm")
 		expect(await readFile(path.join(target, "tkbk-bitrix24", "scripts", "helper.md"), "utf8")).toBe("helper")
 	})
@@ -50,7 +51,7 @@ describe("installStarterSkills", () => {
 	it("is a no-op when the bundle directory is missing", async () => {
 		const result = await installStarterSkills(path.join(root, "missing"), target)
 
-		expect(result).toEqual({ installed: [], skipped: [] })
+		expect(result).toEqual({ installed: [], skipped: [], locked: [] })
 	})
 
 	it("is idempotent across activations", async () => {
@@ -59,5 +60,23 @@ describe("installStarterSkills", () => {
 
 		expect(second.installed).toEqual([])
 		expect(second.skipped).toEqual(["tkbk-amocrm", "tkbk-bitrix24"])
+	})
+
+	it("holds a `tkbk-premium: true` skill back until the plan allows it, then installs it", async () => {
+		await mkdir(path.join(source, "tkbk-pro-audit"), { recursive: true })
+		await writeFile(
+			path.join(source, "tkbk-pro-audit", "SKILL.md"),
+			"---\nname: tkbk-pro-audit\ndescription: pro\ntkbk-premium: true\n---\nbody\n",
+		)
+
+		const free = await installStarterSkills(source, target)
+		expect(free.locked).toEqual(["tkbk-pro-audit"])
+		expect(free.installed).toEqual(["tkbk-amocrm", "tkbk-bitrix24"])
+
+		const pro = await installStarterSkills(source, target, { premium: true })
+		expect(pro.installed).toEqual(["tkbk-pro-audit"])
+		expect(pro.skipped).toEqual(["tkbk-amocrm", "tkbk-bitrix24"])
+		expect(pro.locked).toEqual([])
+		expect(await readFile(path.join(target, "tkbk-pro-audit", "SKILL.md"), "utf8")).toContain("tkbk-premium: true")
 	})
 })

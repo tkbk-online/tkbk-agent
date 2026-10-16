@@ -21,9 +21,20 @@ export class BackgroundTaskItem extends vscode.TreeItem {
 		super(task.title, vscode.TreeItemCollapsibleState.None)
 		this.id = task.id
 		this.description = describeStatus(task)
-		this.iconPath = new vscode.ThemeIcon(STATUS_ICONS[task.status])
-		this.contextValue = `tkbkTask:${task.status}`
-		const lines = [task.prompt, "", `Ветка: ${task.branch}`, `Worktree: ${task.worktreePath}`]
+		this.iconPath = new vscode.ThemeIcon(
+			task.kind === "cloud" && (task.status === "running" || task.status === "preparing")
+				? "cloud-upload"
+				: STATUS_ICONS[task.status],
+		)
+		this.contextValue = `tkbkTask:${task.status}:${task.kind}`
+		const lines = [task.prompt, ""]
+		if (task.kind === "cloud") {
+			lines.push(
+				`Облако: задача ${task.cloudId ?? "—"}, ветка ${task.branch || "—"}${task.minutes ? `, минут: ${task.minutes}` : ""}`,
+			)
+		} else {
+			lines.push(`Ветка: ${task.branch}`, `Worktree: ${task.worktreePath}`)
+		}
 		if (task.summary) {
 			lines.push("", task.summary.slice(0, 1_500))
 		}
@@ -66,6 +77,8 @@ export class BackgroundTasksProvider implements vscode.TreeDataProvider<Backgrou
 
 export interface BackgroundTasksUiOptions {
 	manager: BackgroundTaskManager
+	/** undefined → cloud command reports that it is not configured */
+	cloudAvailable?: () => boolean
 	getRepoPath: () => Promise<string | undefined>
 	/** command id prefix, e.g. "tkbk-agent" */
 	commandPrefix: string
@@ -107,6 +120,32 @@ export function registerBackgroundTasksUi(context: vscode.ExtensionContext, opti
 			void vscode.window.showInformationMessage(
 				`TKBK Agent: задача «${task.title}» ${task.status === "running" || task.status === "preparing" ? "запущена" : "поставлена в очередь"}.${hint ? ` ${hint}` : ""}`,
 			)
+			await vscode.commands.executeCommand(`${BACKGROUND_TASKS_VIEW_ID}.focus`).then(undefined, () => undefined)
+		}),
+		vscode.commands.registerCommand(`${p}.backgroundTask.newCloud`, async () => {
+			const repoPath = await options.getRepoPath()
+			if (!repoPath) {
+				void vscode.window.showWarningMessage(
+					"TKBK Agent: откройте папку с git-репозиторием, чтобы запускать облачные задачи.",
+				)
+				return
+			}
+			if (options.cloudAvailable && !options.cloudAvailable()) {
+				void vscode.window.showWarningMessage(
+					"TKBK Agent: для облачных задач нужен сохранённый ключ TKBK (провайдер TKBK).",
+				)
+				return
+			}
+			const prompt = await vscode.window.showInputBox({
+				title: "Фоновая задача в облаке TKBK",
+				prompt: "Облако клонирует ваш репозиторий (origin, текущая ветка), выполнит задачу в песочнице и вернёт патч. Нужен план Pro.",
+				placeHolder: "Например: обновить зависимости и починить тесты",
+				ignoreFocusOut: true,
+			})
+			if (!prompt?.trim()) {
+				return
+			}
+			manager.enqueueCloud({ title: prompt.trim().split(/\r?\n/)[0].slice(0, 60), prompt: prompt.trim(), repoPath })
 			await vscode.commands.executeCommand(`${BACKGROUND_TASKS_VIEW_ID}.focus`).then(undefined, () => undefined)
 		}),
 		vscode.commands.registerCommand(`${p}.backgroundTask.refresh`, () => provider.refresh()),
@@ -174,8 +213,10 @@ export function registerBackgroundTasksUi(context: vscode.ExtensionContext, opti
 				`# ${task.title}`,
 				"",
 				`Статус: ${describeStatus(task)}`,
-				`Ветка: ${task.branch} (от ${task.baseBranch})`,
-				`Worktree: ${task.worktreePath}`,
+				task.kind === "cloud"
+					? `Облако: задача ${task.cloudId ?? "—"}${task.prUrl ? `, PR: ${task.prUrl}` : ""}`
+					: `Ветка: ${task.branch} (от ${task.baseBranch})`,
+				task.kind === "cloud" ? `Минут списано: ${task.minutes ?? "—"}` : `Worktree: ${task.worktreePath}`,
 				"",
 				"## Задание",
 				task.prompt,

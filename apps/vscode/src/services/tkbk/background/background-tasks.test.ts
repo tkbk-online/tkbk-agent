@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test"
+import type { CloudBackend } from "../cloud/cloud-backend"
+import type { AgentEvent, CreateTaskRequest, Me, Task } from "../cloud/tkbkCloudAgents"
 import {
 	type BackgroundGitOps,
 	type BackgroundTask,
@@ -47,6 +49,84 @@ class FakeGit implements BackgroundGitOps {
 	}
 	async deleteBranch(_repo: string, branch: string): Promise<void> {
 		this.calls.push(`delete-branch:${branch}`)
+	}
+	remote: string | undefined = "https://github.com/tkbk-online/demo"
+	dirty = false
+	async remoteUrl(): Promise<string | undefined> {
+		return this.remote
+	}
+	async isDirty(): Promise<boolean> {
+		return this.dirty
+	}
+	async applyPatch(_repo: string, patch: string): Promise<void> {
+		this.calls.push(`apply-patch:${patch.length}`)
+	}
+}
+
+class FakeCloud implements CloudBackend {
+	created: CreateTaskRequest[] = []
+	cancelled: string[] = []
+	plan = "pro"
+	cloudAgents = true
+	patch = "diff --git a/src/x.ts b/src/x.ts\n--- a/src/x.ts\n+++ b/src/x.ts\n@@ -1 +1 @@\n-a\n+b\n"
+	async me(): Promise<Me> {
+		return {
+			ok: true,
+			key_id: "k",
+			key_prefix: "cr_",
+			plan: this.plan,
+			cloud_agents: this.cloudAgents,
+			hours_month: 20,
+			minutes_used: 10,
+			minutes_left: 1190,
+			concurrent_limit: 3,
+			active_tasks: 0,
+			until: null,
+			error: null,
+		}
+	}
+	async createTask(req: CreateTaskRequest): Promise<{ task: Task; uploadUrl?: string }> {
+		this.created.push(req)
+		return { task: { id: "t_1", status: "queued", phase: "queued", work_branch: "tkbk/t_1" } as unknown as Task }
+	}
+	async *events(): AsyncGenerator<AgentEvent> {
+		yield { seq: 1, ts: "", type: "status", status: "running", phase: "agent" }
+		yield {
+			seq: 2,
+			ts: "",
+			type: "agent",
+			kind: "action",
+			tool: "terminal",
+			text: "pytest -q",
+			thought: "Run the suite first",
+		}
+		yield {
+			seq: 3,
+			ts: "",
+			type: "done",
+			status: "done",
+			error: null,
+			minutes_billed: 4,
+			result: {
+				patch_url: "x",
+				archive_url: null,
+				log_url: null,
+				pr_url: null,
+				branch: "tkbk/t_1",
+				pushed: false,
+				commit: "abc",
+				changed_files: ["src/x.ts"],
+				summary: "Сделано",
+				commands: 3,
+			},
+		}
+	}
+	async diff(): Promise<string> {
+		return this.patch
+	}
+	async cancel(id: string): Promise<Task> {
+		this.cancelled.push(id)
+		return { id, status: "cancelled" } as unknown as Task
 	}
 }
 
@@ -182,5 +262,71 @@ describe("BackgroundTaskManager", () => {
 		runner.finish(task.id)
 		await flush()
 		expect(changes).toBeGreaterThanOrEqual(4)
+	})
+})
+
+describe("BackgroundTaskManager (cloud)", () => {
+	function make(git = new FakeGit(), cloud = new FakeCloud()) {
+		const manager = new BackgroundTaskManager({
+			git,
+			runner: new ControlledRunner(),
+			maxConcurrent: () => 1,
+			cloud: () => cloud,
+			cloudSettings: () => ({ serverUrl: "https://agents.tkbk.online", model: "", maxMinutes: 45 }),
+		})
+		return { manager, git, cloud }
+	}
+
+	it("sends the repo and branch to the orchestrator, streams progress and applies the returned patch", async () => {
+		const { manager, git, cloud } = make()
+		const task = manager.enqueueCloud({ title: "Тесты", prompt: "добавь тесты", repoPath: "/repo" })
+		await flush(8)
+
+		expect(cloud.created[0]).toMatchObject({
+			repoUrl: "https://github.com/tkbk-online/demo",
+			branch: "main",
+			prompt: "добавь тесты",
+			maxMinutes: 45,
+		})
+		expect(task.status).toBe("done")
+		expect(task.kind).toBe("cloud")
+		expect(task.cloudId).toBe("t_1")
+		expect(task.minutes).toBe(4)
+		expect(task.summary).toBe("Сделано")
+		expect(task.changedFiles).toEqual(["src/x.ts"])
+		expect(task.progress).toContain("terminal: Run the suite first")
+		expect(await manager.diff(task.id)).toContain("+++ b/src/x.ts")
+
+		await manager.apply(task.id)
+		expect(task.status).toBe("applied")
+		expect(git.calls.some((c) => c.startsWith("apply-patch:"))).toBe(true)
+		expect(git.calls).not.toContain("remove-worktree")
+	})
+
+	it("refuses when the plan has no cloud agents or the tree is dirty, without a worktree", async () => {
+		const { manager, cloud } = make()
+		cloud.cloudAgents = false
+		cloud.plan = "free"
+		const task = manager.enqueueCloud({ title: "X", prompt: "x", repoPath: "/repo" })
+		await flush(6)
+		expect(task.status).toBe("failed")
+		expect(task.error).toContain("Pro")
+
+		const dirtyGit = new FakeGit()
+		dirtyGit.dirty = true
+		const second = make(dirtyGit)
+		const t2 = second.manager.enqueueCloud({ title: "Y", prompt: "y", repoPath: "/repo" })
+		await flush(6)
+		expect(t2.status).toBe("failed")
+		expect(t2.error).toContain("незакоммиченные")
+		expect(second.cloud.created).toHaveLength(0)
+	})
+
+	it("does not count cloud tasks against the local concurrency limit", async () => {
+		const { manager } = make()
+		manager.enqueueCloud({ title: "C", prompt: "c", repoPath: "/repo" })
+		const local = manager.enqueue({ title: "L", prompt: "l", repoPath: "/repo" })
+		await flush(6)
+		expect(local.status).toBe("running")
 	})
 })

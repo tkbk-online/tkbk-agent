@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto"
 import path from "node:path"
+import type { CloudBackend, CloudSettings } from "../cloud/cloud-backend"
+import { TKBK_PRO_BUY_URL } from "../cloud/cloud-backend"
+import { TERMINAL_STATUSES, TkbkCloudError } from "../cloud/tkbkCloudAgents"
 
 export type BackgroundTaskStatus =
 	| "queued"
@@ -12,8 +15,11 @@ export type BackgroundTaskStatus =
 	| "rejected"
 	| "cancelled"
 
+export type BackgroundTaskKind = "local" | "cloud"
+
 export interface BackgroundTask {
 	id: string
+	kind: BackgroundTaskKind
 	title: string
 	prompt: string
 	status: BackgroundTaskStatus
@@ -35,6 +41,14 @@ export interface BackgroundTask {
 	sessionId?: string
 	/** why the task is still queued, e.g. the Free plan limit */
 	waitReason?: string
+	/** cloud: orchestrator task id, current phase, minutes and the last agent line */
+	cloudId?: string
+	phase?: string
+	minutes?: number
+	progress?: string
+	/** cloud: unified diff fetched when the task finished */
+	patch?: string
+	prUrl?: string
 }
 
 /** What a task needs from git. Implemented with simple-git; faked in tests. */
@@ -50,6 +64,12 @@ export interface BackgroundGitOps {
 	applyBranch(repoPath: string, branch: string, baseBranch: string): Promise<void>
 	removeWorktree(repoPath: string, worktreePath: string): Promise<void>
 	deleteBranch(repoPath: string, branch: string): Promise<void>
+	/** cloud: `origin` URL, or undefined */
+	remoteUrl(repoPath: string): Promise<string | undefined>
+	/** cloud: uncommitted changes present */
+	isDirty(repoPath: string): Promise<boolean>
+	/** cloud: apply a unified diff onto the working tree (3-way); throws on conflict */
+	applyPatch(repoPath: string, patch: string): Promise<void>
 }
 
 export interface BackgroundTaskRunner {
@@ -68,6 +88,9 @@ export interface BackgroundTaskManagerOptions {
 	worktreesRoot?: (repoPath: string) => string
 	log?: (message: string) => void
 	now?: () => number
+	/** cloud orchestrator; undefined → cloud tasks are refused */
+	cloud?: () => CloudBackend | undefined
+	cloudSettings?: () => CloudSettings
 }
 
 export function slugify(title: string): string {
@@ -123,7 +146,7 @@ export class BackgroundTaskManager {
 	}
 
 	running(): number {
-		return this.list().filter((t) => t.status === "preparing" || t.status === "running").length
+		return this.list().filter((t) => t.kind === "local" && (t.status === "preparing" || t.status === "running")).length
 	}
 
 	enqueue(input: { title: string; prompt: string; repoPath: string }): BackgroundTask {
@@ -134,6 +157,7 @@ export class BackgroundTaskManager {
 			this.options.worktreesRoot?.(input.repoPath) ?? path.join(path.dirname(input.repoPath), ".tkbk-worktrees", repoName)
 		const task: BackgroundTask = {
 			id,
+			kind: "local",
 			title: input.title.trim() || input.prompt.slice(0, 60),
 			prompt: input.prompt,
 			status: "queued",
@@ -149,11 +173,174 @@ export class BackgroundTaskManager {
 		return task
 	}
 
-	/** Start queued tasks while there is capacity. */
+	/**
+	 * Cloud task: the orchestrator clones the repository's `origin` at the
+	 * current branch, runs the agent in a sandbox and returns a patch. The
+	 * plan is checked by the server (403 → Pro offer). Uncommitted changes are
+	 * not uploaded in this version, so the working tree must be clean.
+	 */
+	enqueueCloud(input: { title: string; prompt: string; repoPath: string }): BackgroundTask {
+		const id = randomUUID().slice(0, 8)
+		const task: BackgroundTask = {
+			id,
+			kind: "cloud",
+			title: input.title.trim() || input.prompt.slice(0, 60),
+			prompt: input.prompt,
+			status: "queued",
+			repoPath: input.repoPath,
+			worktreePath: "",
+			branch: "",
+			baseBranch: "",
+			createdAt: this.now(),
+		}
+		this.tasks.set(id, task)
+		this.emit()
+		void this.startCloud(task)
+		return task
+	}
+
+	private async startCloud(task: BackgroundTask): Promise<void> {
+		const controller = new AbortController()
+		this.controllers.set(task.id, controller)
+		task.status = "preparing"
+		task.startedAt = this.now()
+		this.emit()
+		try {
+			const backend = this.options.cloud?.()
+			if (!backend) {
+				throw new Error("Облачные задачи не настроены: нужен ключ TKBK в провайдере TKBK.")
+			}
+			const settings = this.options.cloudSettings?.() ?? { serverUrl: "", model: "", maxMinutes: 60 }
+			const [remote, branch, dirty] = await Promise.all([
+				this.options.git.remoteUrl(task.repoPath),
+				this.options.git.currentBranch(task.repoPath),
+				this.options.git.isDirty(task.repoPath),
+			])
+			if (!remote) {
+				throw new Error(
+					"У репозитория нет remote `origin` — облако клонирует репозиторий по URL. Запушьте проект на GitHub/GitLab.",
+				)
+			}
+			if (dirty) {
+				throw new Error(
+					"Есть незакоммиченные изменения — облако берёт ветку из origin. Закоммитьте и запушьте правки или запустите задачу локально.",
+				)
+			}
+			task.baseBranch = branch
+			try {
+				const me = await backend.me()
+				if (!me.cloud_agents) {
+					throw new Error(
+						`Облачные задачи доступны на плане Pro и выше (сейчас: ${me.plan}). Купить Pro: ${TKBK_PRO_BUY_URL}`,
+					)
+				}
+				if (me.minutes_left <= 0) {
+					throw new Error(`Часы облачного агента на этот месяц исчерпаны (${me.hours_month} ч в плане ${me.plan}).`)
+				}
+			} catch (error) {
+				if (error instanceof TkbkCloudError && error.status === 403) {
+					throw new Error(`Облачные задачи доступны на плане Pro и выше. Купить Pro: ${TKBK_PRO_BUY_URL}`)
+				}
+				throw error
+			}
+			const created = await backend.createTask({
+				repoUrl: remote,
+				branch,
+				template: "custom",
+				prompt: task.prompt,
+				model: settings.model || undefined,
+				deliver: "patch",
+				maxMinutes: settings.maxMinutes,
+				clientRef: `tkbk-agent:${task.id}`,
+			})
+			task.cloudId = created.task.id
+			task.branch = created.task.work_branch ?? ""
+			task.status = "running"
+			task.phase = created.task.phase
+			this.emit()
+
+			let finalStatus: string | undefined
+			let finalError: string | null | undefined
+			for await (const event of backend.events(created.task.id, { signal: controller.signal })) {
+				if (event.type === "status") {
+					task.phase = event.phase ?? event.status
+				} else if (event.type === "agent") {
+					const text = (event.thought || event.text || "").replace(/\s+/g, " ").trim()
+					if (text) {
+						task.progress = `${event.tool ? `${event.tool}: ` : ""}${text.slice(0, 160)}`
+					}
+				} else if (event.type === "log" && event.message) {
+					task.progress = event.message.slice(0, 160)
+				} else if (event.type === "done") {
+					finalStatus = event.status
+					finalError = event.error
+					task.minutes = event.minutes_billed
+					if (event.result) {
+						task.summary = event.result.summary
+						task.changedFiles = event.result.changed_files ?? []
+						task.prUrl = event.result.pr_url ?? undefined
+						task.branch = event.result.branch ?? task.branch
+					}
+				}
+				this.emit()
+				if (controller.signal.aborted) {
+					break
+				}
+			}
+			if (controller.signal.aborted) {
+				throw new Error("cancelled")
+			}
+			if (
+				finalStatus &&
+				TERMINAL_STATUSES.has(finalStatus as never) &&
+				finalStatus !== "done" &&
+				finalStatus !== "timeout"
+			) {
+				throw new Error(finalError || `облачная задача завершилась со статусом ${finalStatus}`)
+			}
+			if (finalStatus === "timeout") {
+				task.progress = "Лимит минут исчерпан; применяется то, что успело измениться."
+			}
+			try {
+				task.patch = await backend.diff(created.task.id)
+			} catch {
+				task.patch = ""
+			}
+			if (task.patch && !task.changedFiles?.length) {
+				task.changedFiles = Array.from(task.patch.matchAll(/^\+\+\+ b\/(.+)$/gm), (m) => m[1])
+			}
+			task.summary = task.summary ?? "Облачная задача завершена."
+			task.status = "done"
+			task.finishedAt = this.now()
+			this.log(`cloud task ${task.id} (${task.cloudId}) done`)
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			task.finishedAt = this.now()
+			if (controller.signal.aborted || message === "cancelled") {
+				task.status = "cancelled"
+				task.error = undefined
+				if (task.cloudId) {
+					void this.options
+						.cloud?.()
+						?.cancel(task.cloudId)
+						.catch(() => undefined)
+				}
+			} else {
+				task.status = "failed"
+				task.error = message
+				this.log(`cloud task ${task.id} failed: ${message}`)
+			}
+		} finally {
+			this.controllers.delete(task.id)
+			this.emit()
+		}
+	}
+
+	/** Start queued local tasks while there is capacity. */
 	private async pump(): Promise<void> {
 		const limit = Math.max(1, this.options.maxConcurrent())
 		const queued = this.list()
-			.filter((t) => t.status === "queued")
+			.filter((t) => t.status === "queued" && t.kind === "local")
 			.sort((a, b) => a.createdAt - b.createdAt)
 		for (const task of queued) {
 			if (this.running() >= limit) {
@@ -227,6 +414,9 @@ export class BackgroundTaskManager {
 
 	async diff(id: string): Promise<string> {
 		const task = this.require(id)
+		if (task.kind === "cloud") {
+			return task.patch ?? ""
+		}
 		return this.options.git.diff(task.worktreePath, task.baseBranch)
 	}
 
@@ -239,6 +429,13 @@ export class BackgroundTaskManager {
 		task.status = "applying"
 		this.emit()
 		try {
+			if (task.kind === "cloud") {
+				if (task.patch?.trim()) {
+					await this.options.git.applyPatch(task.repoPath, task.patch)
+				}
+				task.status = "applied"
+				return
+			}
 			if ((task.changedFiles?.length ?? 0) > 0) {
 				await this.options.git.applyBranch(task.repoPath, task.branch, task.baseBranch)
 			}
@@ -260,7 +457,9 @@ export class BackgroundTaskManager {
 			this.cancel(id)
 			return
 		}
-		await this.cleanup(task)
+		if (task.kind === "local") {
+			await this.cleanup(task)
+		}
 		task.status = "rejected"
 		this.emit()
 	}
@@ -311,9 +510,11 @@ export function describeStatus(task: BackgroundTask): string {
 		case "queued":
 			return task.waitReason ? `в очереди — ${task.waitReason}` : "в очереди"
 		case "preparing":
-			return "создаём worktree…"
+			return task.kind === "cloud" ? "отправляем в облако…" : "создаём worktree…"
 		case "running":
-			return "выполняется…"
+			return task.kind === "cloud"
+				? `в облаке: ${task.phase ?? "running"}${task.progress ? ` — ${task.progress}` : ""}`
+				: "выполняется…"
 		case "done":
 			return `готово, файлов: ${task.changedFiles?.length ?? 0}`
 		case "failed":

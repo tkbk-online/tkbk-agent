@@ -42,6 +42,7 @@ import { StateManager } from "@/core/storage/StateManager"
 import { HostProvider } from "@/hosts/host-provider"
 import { ExtensionRegistryInfo } from "@/registry"
 import { getDistinctId } from "@/services/logging/distinctId"
+import { collectAutocontext } from "@/services/tkbk/autocontext"
 import { fetch, fetchWithoutIdleTimeouts } from "@/shared/net"
 import { type BedrockProviderConfig, buildBedrockProviderConfig } from "./bedrock-config"
 import { buildAgentHooks } from "./hooks-adapter"
@@ -1101,6 +1102,17 @@ export async function buildSessionConfig(input: SessionConfigInput): Promise<Cor
 		}
 	} catch (error) {
 		Logger.warn("[SessionFactory] Failed to inject preferredLanguage instructions:", error)
+	}
+
+	// TKBK autocontext: what is open, what is broken, what is uncommitted — a
+	// compact snapshot so the agent does not start blind. Never fatal.
+	try {
+		const autocontext = await collectAutocontext(cwd)
+		if (autocontext) {
+			systemPrompt = `${systemPrompt}\n\n${autocontext}`
+		}
+	} catch (error) {
+		Logger.warn("[SessionFactory] Failed to collect autocontext:", error)
 	}
 
 	const stateManager = StateManager.get()

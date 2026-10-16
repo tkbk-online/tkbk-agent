@@ -53,6 +53,8 @@ const AGENTS_CONFIG_DIR = LEGACY_AGENT_SKILLS_CONFIG_DIR;
  * format), alongside every directory Cline already scans.
  */
 export const TKBK_CONFIG_DIR = ".tkbk";
+/** `<workspace>/.tkbk/memory.md` — the agent's notes about the project. */
+export const TKBK_MEMORY_FILE_NAME = "memory.md";
 
 export const AGENT_CONFIG_DIRECTORY_NAME = "agents";
 export const HOOKS_CONFIG_DIRECTORY_NAME = "hooks";
@@ -572,6 +574,8 @@ export function resolveWorkspaceRulesConfigPaths(
 	workspacePath: string,
 ): string[] {
 	return [
+		// TKBK Agent's project memory: a single file the agent maintains, loaded like a rule.
+		join(workspacePath, TKBK_CONFIG_DIR, TKBK_MEMORY_FILE_NAME),
 		join(workspacePath, TKBK_CONFIG_DIR, RULES_CONFIG_DIRECTORY_NAME),
 		join(workspacePath, DEPRECATED_CONFIG_DIR),
 		join(workspacePath, CLINE_CONFIG_DIR, RULES_CONFIG_DIRECTORY_NAME),

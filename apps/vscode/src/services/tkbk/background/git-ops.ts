@@ -75,4 +75,31 @@ export class SimpleGitOps implements BackgroundGitOps {
 	async deleteBranch(repoPath: string, branch: string): Promise<void> {
 		await simpleGit(repoPath).raw(["branch", "-D", branch])
 	}
+
+	async remoteUrl(repoPath: string): Promise<string | undefined> {
+		try {
+			const url = (await simpleGit(repoPath).remote(["get-url", "origin"])) || ""
+			return String(url).trim() || undefined
+		} catch {
+			return undefined
+		}
+	}
+
+	async isDirty(repoPath: string): Promise<boolean> {
+		const status = await simpleGit(repoPath).status()
+		return status.files.length > 0
+	}
+
+	async applyPatch(repoPath: string, patch: string): Promise<void> {
+		const tmp = path.join(os.tmpdir(), `tkbk-cloud-${Date.now()}.patch`)
+		await writeFile(tmp, patch.endsWith("\n") ? patch : `${patch}\n`, "utf8")
+		try {
+			await simpleGit(repoPath).raw(["apply", "--3way", "--index", tmp])
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			throw new Error(`Патч из облака не применился без конфликтов: ${message}. Откройте diff и перенесите правки вручную.`)
+		} finally {
+			await rm(tmp, { force: true })
+		}
+	}
 }

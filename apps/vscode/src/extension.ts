@@ -20,7 +20,7 @@ import { sendMcpButtonClickedEvent } from "./core/controller/ui/subscribeToMcpBu
 import { sendSettingsButtonClickedEvent } from "./core/controller/ui/subscribeToSettingsButtonClicked"
 import { sendWorktreesButtonClickedEvent } from "./core/controller/ui/subscribeToWorktreesButtonClicked"
 import { WebviewProvider } from "./core/webview"
-import { createClineAPI } from "./exports"
+import { createClineAPI, resolveTkbkApiKey } from "./exports"
 import "./utils/path" // necessary to have access to String.prototype.toPosix
 import path from "node:path"
 import type { ExtensionContext } from "vscode"
@@ -55,6 +55,7 @@ import {
 	getVscodeCommentReviewController,
 } from "./hosts/vscode/review/VscodeCommentReviewController"
 import { registerBackgroundTasksUi } from "./hosts/vscode/tkbk/background-tasks-view"
+import { registerTabCompletion } from "./hosts/vscode/tkbk/tab-completion"
 import { DIFF_VIEW_URI_SCHEME, diffContentProvider } from "./hosts/vscode/VscodeDiffContentProvider"
 import { EDIT_PREVIEW_URI_SCHEME, editPreviewContentProvider, VscodeEditPreview } from "./hosts/vscode/VscodeEditPreview"
 import { VscodeWebviewProvider } from "./hosts/vscode/VscodeWebviewProvider"
@@ -67,6 +68,8 @@ import { installStarterSkills } from "./services/skills/tkbk-starter-skills"
 import { HeadlessBackgroundRunner } from "./services/tkbk/background/background-runner"
 import { BackgroundTaskManager } from "./services/tkbk/background/background-tasks"
 import { SimpleGitOps } from "./services/tkbk/background/git-ops"
+import { type CloudBackend, type CloudSettings, DEFAULT_CLOUD_SERVER_URL } from "./services/tkbk/cloud/cloud-backend"
+import { TkbkCloudAgents } from "./services/tkbk/cloud/tkbkCloudAgents"
 import { readIndexSettings, resolveEmbedder, setTkbkIndexManager, TkbkIndexManager } from "./services/tkbk/index/index-manager"
 import { installManagedMarkdown } from "./services/tkbk/managed-markdown"
 import { resolveSubagentFastModel } from "./services/tkbk/subagent-routing"
@@ -245,16 +248,39 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 4g. Background tasks: the agent works headless in its own git worktree; the
 	// person applies, opens or rejects the result from the «Фоновые задачи» view.
 	// Free runs one task at a time, paid plans up to three.
+	const readCloudSettings = (): CloudSettings => {
+		const cfg = vscode.workspace.getConfiguration("tkbk-agent.cloud")
+		return {
+			serverUrl: cfg.get<string>("serverUrl", DEFAULT_CLOUD_SERVER_URL) || DEFAULT_CLOUD_SERVER_URL,
+			model: cfg.get<string>("model", ""),
+			maxMinutes: cfg.get<number>("maxMinutes", 60),
+		}
+	}
+	const createCloudBackend = (): CloudBackend | undefined => {
+		let apiKey = ""
+		try {
+			apiKey = resolveProviderApiKeyFromSettings(getProviderSettingsManager(), "tkbk")?.trim() ?? ""
+		} catch {
+			apiKey = ""
+		}
+		if (!apiKey) {
+			return undefined
+		}
+		return new TkbkCloudAgents({ baseUrl: readCloudSettings().serverUrl, apiKey })
+	}
 	const backgroundTasks = new BackgroundTaskManager({
 		git: new SimpleGitOps(),
 		runner: new HeadlessBackgroundRunner(),
 		maxConcurrent: () => (license.view().plan === "free" ? 1 : 3),
 		limitReason: () => (license.view().plan === "free" ? "на плане Free — одна задача одновременно, Pro — три" : undefined),
+		cloud: createCloudBackend,
+		cloudSettings: readCloudSettings,
 		log: (message) => Logger.log(message),
 	})
 	context.subscriptions.push({ dispose: () => backgroundTasks.dispose() })
 	registerBackgroundTasksUi(context, {
 		manager: backgroundTasks,
+		cloudAvailable: () => createCloudBackend() !== undefined,
 		commandPrefix: ExtensionRegistryInfo.name,
 		getRepoPath: async () => {
 			const paths = (await HostProvider.workspace.getWorkspacePaths({})).paths
@@ -739,6 +765,13 @@ ${ctx.cellJson || "{}"}
 	const apiKeyChanged = new vscode.EventEmitter<void>()
 	context.subscriptions.push(apiKeyChanged)
 	context.subscriptions.push({ dispose: onProviderSettingsSaved(() => apiKeyChanged.fire()) })
+
+	// 4h. TKBK Tab: inline completions on the same key (settings tkbk-agent.tab.*).
+	const tab = registerTabCompletion(context, {
+		commandPrefix: ExtensionRegistryInfo.name,
+		getApiKey: async () => (await resolveTkbkApiKey()) || process.env.TKBK_API_KEY || undefined,
+	})
+	context.subscriptions.push(apiKeyChanged.event(() => tab.onApiKeyChanged()))
 
 	return { ...createClineAPI(webview.controller), onDidChangeApiKey: apiKeyChanged.event }
 }

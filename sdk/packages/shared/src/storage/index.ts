@@ -64,6 +64,7 @@ export {
 	resolveWorkspaceTaskSpecsDir,
 	SKILLS_CONFIG_DIRECTORY_NAME,
 	TKBK_CONFIG_DIR,
+	TKBK_MEMORY_FILE_NAME,
 	setClineDir,
 	setClineDirIfUnset,
 	setHomeDir,

@@ -326,6 +326,32 @@
 				"title": "Убрать из списка",
 				"icon": "$(close)",
 				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.newCloud",
+				"title": "Фоновая задача в облаке…",
+				"icon": "$(cloud-upload)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.tab.toggle",
+				"title": "TKBK Tab: включить/выключить подсказки",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.tab.selectModel",
+				"title": "TKBK Tab: выбрать модель",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.tab.showLog",
+				"title": "TKBK Tab: показать журнал",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.tab.menu",
+				"title": "TKBK Tab: меню",
+				"category": "TKBK Agent"
 			}
 		],
 		"keybindings": [
@@ -384,6 +410,11 @@
 				},
 				{
 					"command": "tkbk-agent.backgroundTask.refresh",
+					"group": "navigation@3",
+					"when": "view == tkbk-agent.backgroundTasks"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.newCloud",
 					"group": "navigation@2",
 					"when": "view == tkbk-agent.backgroundTasks"
 				}
@@ -478,17 +509,17 @@
 				{
 					"command": "tkbk-agent.backgroundTask.apply",
 					"group": "inline@1",
-					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /^tkbkTask:done:/"
 				},
 				{
 					"command": "tkbk-agent.backgroundTask.showDiff",
 					"group": "inline@2",
-					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /^tkbkTask:done:/"
 				},
 				{
 					"command": "tkbk-agent.backgroundTask.open",
 					"group": "inline@3",
-					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(done|failed|running)/"
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /^tkbkTask:(done|failed|running):local/"
 				},
 				{
 					"command": "tkbk-agent.backgroundTask.cancel",
@@ -498,12 +529,12 @@
 				{
 					"command": "tkbk-agent.backgroundTask.apply",
 					"group": "1_actions@1",
-					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /^tkbkTask:done:/"
 				},
 				{
 					"command": "tkbk-agent.backgroundTask.showDiff",
 					"group": "1_actions@2",
-					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /^tkbkTask:done:/"
 				},
 				{
 					"command": "tkbk-agent.backgroundTask.showReport",
@@ -513,7 +544,7 @@
 				{
 					"command": "tkbk-agent.backgroundTask.open",
 					"group": "1_actions@4",
-					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(done|failed|running)/"
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /^tkbkTask:(done|failed|running):local/"
 				},
 				{
 					"command": "tkbk-agent.backgroundTask.reject",
@@ -566,6 +597,79 @@
 					"minimum": 16,
 					"maximum": 4096,
 					"description": "Файлы больше этого размера (КБ) в индекс не попадают."
+				},
+				"tkbk-agent.cloud.serverUrl": {
+					"type": "string",
+					"default": "https://agents.tkbk.online",
+					"description": "Адрес оркестратора облачных задач TKBK (TKBK Cloud Agents). Для локальной проверки — http://127.0.0.1:8090."
+				},
+				"tkbk-agent.cloud.model": {
+					"type": "string",
+					"default": "",
+					"description": "Модель для облачных задач (пусто — по умолчанию сервера, обычно claude-sonnet-5)."
+				},
+				"tkbk-agent.cloud.maxMinutes": {
+					"type": "number",
+					"default": 60,
+					"minimum": 5,
+					"maximum": 120,
+					"description": "Лимит минут на одну облачную задачу."
+				},
+				"tkbk-agent.tab.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "TKBK Tab: показывать подсказки кода (серый текст, принимается клавишей Tab) через шлюз TKBK на том же ключе, что и агент."
+				},
+				"tkbk-agent.tab.model": {
+					"type": "string",
+					"default": "deepseek-v4-pro",
+					"markdownDescription": "Модель из каталога TKBK для автодополнения. Нужна быстрая и дешёвая: `deepseek-v4-pro`, `glm-5.3`. Список — команда «TKBK Tab: выбрать модель»."
+				},
+				"tkbk-agent.tab.debounceMs": {
+					"type": "number",
+					"default": 150,
+					"minimum": 0,
+					"maximum": 2000,
+					"description": "Пауза после ввода перед запросом подсказки, мс."
+				},
+				"tkbk-agent.tab.maxTokens": {
+					"type": "number",
+					"default": 160,
+					"minimum": 16,
+					"maximum": 1024,
+					"description": "Максимальная длина подсказки в токенах."
+				},
+				"tkbk-agent.tab.multiline": {
+					"type": "string",
+					"enum": [
+						"auto",
+						"always",
+						"never"
+					],
+					"default": "auto",
+					"description": "Многострочные подсказки: auto — после открывающей скобки или на пустой строке; always; never."
+				},
+				"tkbk-agent.tab.contextChars": {
+					"type": "number",
+					"default": 6000,
+					"minimum": 500,
+					"maximum": 30000,
+					"description": "Сколько символов до курсора отправлять в запросе (после — четверть от этого)."
+				},
+				"tkbk-agent.tab.disabledLanguages": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"description": "Языки (languageId), где подсказки не показывать, например plaintext, markdown."
+				},
+				"tkbk-agent.tab.timeoutMs": {
+					"type": "number",
+					"default": 8000,
+					"minimum": 1000,
+					"maximum": 30000,
+					"description": "Таймаут запроса подсказки, мс."
 				}
 			}
 		}

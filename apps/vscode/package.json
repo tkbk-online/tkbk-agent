@@ -573,8 +573,8 @@
 				},
 				"tkbk-agent.subagents.fastModel": {
 					"type": "string",
-					"default": "glm-5.3",
-					"description": "Модель из каталога TKBK для роли «explore» при включённом авто-роутинге (например glm-5.3, deepseek-v4-pro)."
+					"default": "deepseek-v4.1-flash",
+					"description": "Модель из каталога TKBK для роли «explore» при включённом авто-роутинге (например deepseek-v4.1-flash, claude-haiku-4-5)."
 				},
 				"tkbk-agent.index.enabled": {
 					"type": "boolean",
@@ -622,8 +622,8 @@
 				},
 				"tkbk-agent.tab.model": {
 					"type": "string",
-					"default": "deepseek-v4-pro",
-					"markdownDescription": "Модель из каталога TKBK для автодополнения. Нужна быстрая и дешёвая: `deepseek-v4-pro`, `glm-5.3`. Список — команда «TKBK Tab: выбрать модель»."
+					"default": "claude-haiku-4-5",
+					"markdownDescription": "Модель из каталога TKBK для автодополнения. Быстрее и чище всего `claude-haiku-4-5` (≈2 с); дешевле — `deepseek-v4.1-flash` (≈7 с). Список — команда «TKBK Tab: выбрать модель»."
 				},
 				"tkbk-agent.tab.debounceMs": {
 					"type": "number",

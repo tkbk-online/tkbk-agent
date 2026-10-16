@@ -227,21 +227,28 @@ export class BackgroundTaskManager {
 				)
 			}
 			task.baseBranch = branch
+			let me: Awaited<ReturnType<CloudBackend["me"]>>
 			try {
-				const me = await backend.me()
-				if (!me.cloud_agents) {
-					throw new Error(
-						`Облачные задачи доступны на плане Pro и выше (сейчас: ${me.plan}). Купить Pro: ${TKBK_PRO_BUY_URL}`,
-					)
-				}
-				if (me.minutes_left <= 0) {
-					throw new Error(`Часы облачного агента на этот месяц исчерпаны (${me.hours_month} ч в плане ${me.plan}).`)
-				}
+				me = await backend.me()
 			} catch (error) {
 				if (error instanceof TkbkCloudError && error.status === 403) {
 					throw new Error(`Облачные задачи доступны на плане Pro и выше. Купить Pro: ${TKBK_PRO_BUY_URL}`)
 				}
-				throw error
+				if (error instanceof TkbkCloudError && error.status === 401) {
+					throw new Error("Сервер облачных задач не принял ключ TKBK. Проверьте ключ в настройках провайдера.")
+				}
+				const detail = error instanceof Error ? error.message : String(error)
+				throw new Error(
+					`Сервер облачных задач недоступен (${settings.serverUrl || "адрес не задан"}): ${detail}. Проверьте настройку tkbk-agent.cloud.serverUrl или запустите задачу локально.`,
+				)
+			}
+			if (!me.cloud_agents) {
+				throw new Error(
+					`Облачные задачи доступны на плане Pro и выше (сейчас: ${me.plan}). Купить Pro: ${TKBK_PRO_BUY_URL}`,
+				)
+			}
+			if (me.minutes_left <= 0) {
+				throw new Error(`Часы облачного агента на этот месяц исчерпаны (${me.hours_month} ч в плане ${me.plan}).`)
 			}
 			const created = await backend.createTask({
 				repoUrl: remote,

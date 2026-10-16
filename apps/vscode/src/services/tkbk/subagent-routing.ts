@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import { StateManager } from "@/core/storage/StateManager"
 import { Logger } from "@/shared/services/Logger"
 
-export const TKBK_DEFAULT_FAST_MODEL = "glm-5.3"
+export const TKBK_DEFAULT_FAST_MODEL = "deepseek-v4.1-flash"
 
 export interface SubagentRoutingInput {
 	/** `tkbk-agent.subagents.autoRouteModels` */

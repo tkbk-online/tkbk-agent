@@ -13,6 +13,8 @@ export interface GatewayEmbedderOptions {
 	/** texts per request */
 	batchSize?: number
 	timeoutMs?: number
+	/** called with the gateway's reported token usage per request */
+	onUsage?: (usage: { promptTokens: number; totalTokens: number }) => void
 }
 
 const DEFAULT_BATCH = 64
@@ -87,7 +89,16 @@ export class GatewayEmbedder implements Embedder {
 				const body = (await response.text().catch(() => "")).slice(0, 300)
 				throw new EmbeddingUnavailableError(`embeddings HTTP ${response.status}: ${body}`, response.status)
 			}
-			const payload = (await response.json()) as { data?: Array<{ index?: number; embedding?: number[] }> }
+			const payload = (await response.json()) as {
+				data?: Array<{ index?: number; embedding?: number[] }>
+				usage?: { prompt_tokens?: number; total_tokens?: number }
+			}
+			if (payload?.usage && this.options.onUsage) {
+				this.options.onUsage({
+					promptTokens: payload.usage.prompt_tokens ?? 0,
+					totalTokens: payload.usage.total_tokens ?? 0,
+				})
+			}
 			const rows = payload?.data ?? []
 			if (rows.length !== batch.length) {
 				throw new EmbeddingUnavailableError(`embeddings returned ${rows.length} vectors for ${batch.length} inputs`)

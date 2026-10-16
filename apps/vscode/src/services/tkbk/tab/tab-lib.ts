@@ -8,9 +8,14 @@ export const TAB_SYSTEM_PROMPT = [
 	"You are a code completion engine inside an IDE.",
 	"You receive the text before the cursor (PREFIX) and after the cursor (SUFFIX), and sometimes the developer's RECENT_EDITS in other places of the project for context.",
 	"Return ONLY the code to insert at the cursor: no explanations, no markdown fences, no repetition of PREFIX or SUFFIX.",
+	"Never repeat a line that already exists in PREFIX; continue from the exact cursor position.",
 	"Match the language, indentation and style of the surrounding code. Keep it short: finish the current statement or block.",
 	"If nothing useful can be inserted, return an empty string.",
+	"You have no tools and cannot run commands or read files: never emit tool calls, function-call markup or XML tags.",
 ].join(" ")
+
+/** Tool-call markup some chat models emit when they try to act instead of completing. */
+const TOOL_MARKUP_RE = /<[\u2502|｜]{1,2}DSML[\u2502|｜]{1,2}|<tool_call|<function_calls|<invoke\b|\[TOOL_CALL\]/i
 
 const FENCE_RE = /^\s*```[a-zA-Z0-9_+-]*\s*\n?|\n?\s*```\s*$/g
 
@@ -160,13 +165,54 @@ export interface PostProcessContext {
 	lineAfter: string
 	multiline: boolean
 	suffix?: string
+	/** text before the cursor, used to drop echoes of existing lines */
+	prefix?: string
+}
+
+/**
+ * True when the completion is nothing but lines that already exist in the
+ * PREFIX (a model echoing the file instead of continuing it).
+ */
+export function echoesPrefix(text: string, prefix: string | undefined): boolean {
+	if (!prefix) {
+		return false
+	}
+	const lines = text
+		.split("\n")
+		.map((l) => l.trim())
+		.filter(Boolean)
+	if (lines.length === 0) {
+		return false
+	}
+	const existing = new Set(
+		prefix
+			.split("\n")
+			.map((l) => l.trim())
+			.filter((l) => l.length >= 4),
+	)
+	return lines.every((l) => existing.has(l))
 }
 
 /** Clean the model output into an insertable snippet. */
 export function postProcessTab(raw: string, ctx: PostProcessContext): string {
 	let text = String(raw ?? "").replace(/\r\n/g, "\n")
+	if (TOOL_MARKUP_RE.test(text)) {
+		return ""
+	}
 	text = text.replace(FENCE_RE, "")
+	// A fence after the code means the model went on to explain: keep only the code.
+	const fenceAt = text.indexOf("```")
+	if (fenceAt >= 0) {
+		text = text.slice(0, fenceAt).trimEnd()
+	}
 	text = text.replace(/<\/?(PREFIX|SUFFIX|CURSOR)>/g, "")
+	// Single-line answers wrapped in inline backticks.
+	if (!ctx.multiline) {
+		const inline = text.trim().match(/^`([^`\n]+)`$/)
+		if (inline) {
+			text = inline[1]
+		}
+	}
 	if (!text.trim()) {
 		return ""
 	}
@@ -197,6 +243,9 @@ export function postProcessTab(raw: string, ctx: PostProcessContext): string {
 		}
 	} else {
 		text = text.replace(/^\n{2,}/, "\n")
+	}
+	if (echoesPrefix(text, ctx.prefix)) {
+		return ""
 	}
 
 	const lineAfter = ctx.lineAfter || ""

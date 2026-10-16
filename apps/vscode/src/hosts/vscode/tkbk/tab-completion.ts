@@ -16,15 +16,16 @@ import {
 import { Logger } from "@/shared/services/Logger"
 
 export const TAB_SETTINGS_SECTION = "tkbk-agent.tab"
-export const TAB_DEFAULT_MODEL = "deepseek-v4-pro"
+export const TAB_DEFAULT_MODEL = "claude-haiku-4-5"
 const TAB_CATALOG = [
+	"deepseek-v4.1-flash",
+	"claude-haiku-4-5",
 	"deepseek-v4-pro",
 	"glm-5.3",
+	"gpt-6-astra",
 	"gpt-6.1-sol",
 	"grok-4.7",
 	"claude-sonnet-5",
-	"claude-opus-5-5",
-	"claude-fable-5-1",
 ]
 const GATEWAY_BASE_URL = "https://api.tkbk.online/v1"
 
@@ -134,7 +135,7 @@ export class TkbkTabCompletion implements vscode.InlineCompletionItemProvider, v
 					})),
 					{
 						title: "Модель для Tab-автодополнения",
-						placeHolder: "Быстрые модели дают лучшие подсказки: deepseek-v4-pro, glm-5.3",
+						placeHolder: "Быстрые модели дают лучшие подсказки: deepseek-v4.1-flash, claude-haiku-4-5",
 					},
 				)
 				if (!pick) {
@@ -344,6 +345,7 @@ export class TkbkTabCompletion implements vscode.InlineCompletionItemProvider, v
 		}
 
 		this.updateStatus("busy")
+		const t0 = performance.now()
 		try {
 			const fileName = vscode.workspace.asRelativePath(document.uri)
 			const raw = await this.requestCompletion(
@@ -362,10 +364,15 @@ export class TkbkTabCompletion implements vscode.InlineCompletionItemProvider, v
 				settings.timeoutMs,
 				token,
 			)
+			const ms = Math.round(performance.now() - t0)
 			if (token.isCancellationRequested) {
+				this.log(`cancelled model=${settings.model} ${ms} ms ${document.languageId}`)
 				return []
 			}
-			const text = postProcessTab(raw, { lineBefore, lineAfter, multiline, suffix })
+			const text = postProcessTab(raw, { lineBefore, lineAfter, multiline, suffix, prefix })
+			this.log(
+				`ok model=${settings.model} ${ms} ms ${document.languageId} multiline=${multiline} raw=${raw.length} → ${text.length} chars${text ? "" : " (dropped)"}`,
+			)
 			this.failures = 0
 			this.updateStatus("ok")
 			this.cache.set(key, text)
@@ -378,7 +385,10 @@ export class TkbkTabCompletion implements vscode.InlineCompletionItemProvider, v
 				return []
 			}
 			this.failures++
-			this.log("error:", error instanceof Error ? error.message : String(error))
+			this.log(
+				`error model=${settings.model} ${Math.round(performance.now() - t0)} ms:`,
+				error instanceof Error ? error.message : String(error),
+			)
 			if ((error as { auth?: boolean }).auth) {
 				this.updateStatus("nokey")
 				this.pausedUntil = Date.now() + 60_000

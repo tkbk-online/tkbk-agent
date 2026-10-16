@@ -76,6 +76,36 @@ describe("postProcessTab", () => {
 		expect(postProcessTab("   ", { lineBefore: "", lineAfter: "", multiline: true })).toBe("")
 	})
 
+	it("discards attempted tool calls and trailing explanations, unwraps inline backticks", () => {
+		const dsml = '<｜｜DSML｜｜ calls>\n<｜｜DSML｜｜ invoke name="shell">cat src/pricing.js</｜｜DSML｜｜ invoke>'
+		expect(postProcessTab(dsml, { lineBefore: "", lineAfter: "", multiline: true })).toBe("")
+		expect(postProcessTab("<tool_call>{}</tool_call>", { lineBefore: "", lineAfter: "", multiline: false })).toBe("")
+		expect(postProcessTab("return x;\n```\n\n`toFixed(2)` rounds…", { lineBefore: "", lineAfter: "", multiline: true })).toBe(
+			"return x;",
+		)
+		expect(
+			postProcessTab("`price * percent / 100`", { lineBefore: "  return price - ", lineAfter: ";", multiline: false }),
+		).toBe("price * percent / 100")
+	})
+
+	it("drops completions that only echo lines already in the prefix", () => {
+		const prefix = "// TKBK Tab demo\nfunction sum("
+		expect(postProcessTab("// TKBK Tab demo", { lineBefore: "function sum(", lineAfter: "", multiline: false, prefix })).toBe(
+			"",
+		)
+		expect(postProcessTab("a, b) {", { lineBefore: "function sum(", lineAfter: "", multiline: false, prefix })).toBe(
+			"a, b) {",
+		)
+		expect(
+			postProcessTab("// TKBK Tab demo\nfunction sum(", {
+				lineBefore: "",
+				lineAfter: "",
+				multiline: true,
+				prefix: `${prefix}\n`,
+			}),
+		).toBe("")
+	})
+
 	it("drops a verbatim repeat of the following lines", () => {
 		const suffix = "\nreturn x\n}\n"
 		expect(postProcessTab("const x = 1\nreturn x\n}", { lineBefore: "", lineAfter: "", multiline: true, suffix })).toBe(

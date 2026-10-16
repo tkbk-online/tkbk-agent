@@ -1,5 +1,11 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseConfiguredAgentConfig } from "./configured-agent-config";
+import {
+	loadConfiguredAgentConfigs,
+	parseConfiguredAgentConfig,
+} from "./configured-agent-config";
 
 describe("configured agent config parser", () => {
 	it("parses YAML frontmatter and system prompt body", () => {
@@ -64,5 +70,45 @@ ${yaml}
 ---
 You are a code reviewer.`),
 		).toThrow("Missing closing YAML frontmatter delimiter");
+	});
+});
+
+describe("configured agent config loader", () => {
+	it("loads Markdown and YAML agent files from a search path, ignoring other files", () => {
+		const dir = mkdtempSync(join(tmpdir(), "tkbk-agent-configs-"));
+		try {
+			writeFileSync(
+				join(dir, "explore.md"),
+				[
+					"---",
+					"name: explore",
+					"description: Разведка по коду",
+					"tools: read_files, search_codebase",
+					"modelId: deepseek-v4.1-flash",
+					"tkbk-managed: true",
+					"---",
+					"",
+					"Ты — разведчик.",
+				].join("\n"),
+				"utf8",
+			);
+			writeFileSync(
+				join(dir, "tester.yaml"),
+				["---", "name: tester", "description: Runs tests", "---", "You run tests."].join("\n"),
+				"utf8",
+			);
+			writeFileSync(join(dir, "README.txt"), "not an agent", "utf8");
+
+			const { configs, errors } = loadConfiguredAgentConfigs({ searchPaths: [dir] });
+
+			expect(errors).toEqual([]);
+			expect(configs.map((c) => c.name).sort()).toEqual(["explore", "tester"]);
+			const explore = configs.find((c) => c.name === "explore");
+			expect(explore?.modelId).toBe("deepseek-v4.1-flash");
+			expect(explore?.tools).toEqual(["read_files", "search_codebase"]);
+			expect(explore?.systemPrompt).toBe("Ты — разведчик.");
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
 	});
 });

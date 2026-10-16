@@ -805,8 +805,16 @@ export const TKBK_BUNDLED_MODELS: readonly {
 		source: "anthropic",
 		apiProtocol: "anthropic",
 	},
+	{
+		id: "claude-haiku-4-5",
+		name: "Claude Haiku 4.5",
+		source: "anthropic",
+		apiProtocol: "anthropic",
+	},
 	{ id: "gpt-6.1-sol", name: "GPT-6.1 Sol", source: "openai-native" },
+	{ id: "gpt-6-astra", name: "GPT-6 Astra", source: "openai-native" },
 	{ id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", source: "deepseek" },
+	{ id: "deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", source: "deepseek" },
 	{ id: "glm-5.3", name: "GLM-5.3", source: "zai" },
 	{ id: "grok-4.7", name: "Grok 4.7", source: "xai" },
 ];

@@ -654,18 +654,21 @@ describe("tkbk builtin spec", () => {
 		expect(Object.keys(models).sort()).toEqual(
 			[
 				"claude-fable-5-1",
+				"claude-haiku-4-5",
 				"claude-opus-5-5",
 				"claude-sonnet-5",
 				"deepseek-v4-pro",
+				"deepseek-v4.1-flash",
 				"glm-5.3",
+				"gpt-6-astra",
 				"gpt-6.1-sol",
 				"grok-4.7",
 			].sort(),
 		);
-		for (const id of ["claude-sonnet-5", "claude-opus-5-5", "claude-fable-5-1"]) {
+		for (const id of ["claude-sonnet-5", "claude-opus-5-5", "claude-fable-5-1", "claude-haiku-4-5"]) {
 			expect(models[id]?.metadata?.apiProtocol).toBe("anthropic");
 		}
-		for (const id of ["gpt-6.1-sol", "deepseek-v4-pro", "glm-5.3", "grok-4.7"]) {
+		for (const id of ["gpt-6.1-sol", "gpt-6-astra", "deepseek-v4-pro", "deepseek-v4.1-flash", "glm-5.3", "grok-4.7"]) {
 			expect(models[id]?.metadata?.apiProtocol).toBeUndefined();
 		}
 		// Model facts are copied from the vendor catalogs, not stubbed.

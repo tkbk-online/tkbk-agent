@@ -163,6 +163,12 @@
 				"icon": "$(history)"
 			},
 			{
+				"command": "tkbk-agent.reviewChanges",
+				"title": "Проверить изменения",
+				"icon": "$(checklist)",
+				"category": "TKBK Agent"
+			},
+			{
 				"command": "tkbk-agent.accountButtonClicked",
 				"title": "Аккаунт",
 				"icon": "$(account)"
@@ -253,6 +259,11 @@
 				"command": "tkbk-agent.cloudAgent",
 				"title": "Облачный агент (Pro)",
 				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.reindexCodebase",
+				"title": "Переиндексировать проект",
+				"category": "TKBK Agent"
 			}
 		],
 		"keybindings": [
@@ -292,6 +303,11 @@
 				{
 					"command": "tkbk-agent.historyButtonClicked",
 					"group": "navigation@3",
+					"when": "view == tkbk-agent.SidebarProvider"
+				},
+				{
+					"command": "tkbk-agent.reviewChanges",
+					"group": "navigation@4",
 					"when": "view == tkbk-agent.SidebarProvider"
 				},
 				{
@@ -357,7 +373,40 @@
 		},
 		"configuration": {
 			"title": "TKBK Agent",
-			"properties": {}
+			"properties": {
+				"tkbk-agent.subagents.autoRouteModels": {
+					"type": "boolean",
+					"default": true,
+					"description": "Авто-роутинг моделей субагентов: роль «explore» (разведка по коду) работает на быстрой дешёвой модели TKBK, остальные роли — на модели основной задачи. Действует только с провайдером TKBK."
+				},
+				"tkbk-agent.subagents.fastModel": {
+					"type": "string",
+					"default": "glm-5.3",
+					"description": "Модель из каталога TKBK для роли «explore» при включённом авто-роутинге (например glm-5.3, deepseek-v4-pro)."
+				},
+				"tkbk-agent.index.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Индексировать открытый проект для смыслового поиска по коду (инструмент codebase_search). Индекс хранится в ~/.tkbk/index и обновляется при изменении файлов."
+				},
+				"tkbk-agent.index.useEmbeddings": {
+					"type": "boolean",
+					"default": true,
+					"description": "Строить семантический индекс через эмбеддинги шлюза TKBK (нужен провайдер TKBK и сохранённый ключ). Выключено или недоступно — работает лексический поиск без сети."
+				},
+				"tkbk-agent.index.embeddingModel": {
+					"type": "string",
+					"default": "text-embedding-3-small",
+					"description": "Модель эмбеддингов из каталога TKBK для индекса кода."
+				},
+				"tkbk-agent.index.maxFileKb": {
+					"type": "number",
+					"default": 200,
+					"minimum": 16,
+					"maximum": 4096,
+					"description": "Файлы больше этого размера (КБ) в индекс не попадают."
+				}
+			}
 		}
 	},
 	"scripts": {

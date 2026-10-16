@@ -3,6 +3,8 @@ import type { AgentTool, AgentToolContext } from "@cline/shared"
 import type { VscodeTerminalManager } from "@/hosts/vscode/terminal/VscodeTerminalManager"
 import type { McpHub } from "@/services/mcp/McpHub"
 import { resolveMcpServerTimeoutMs } from "@/services/mcp/timeout"
+import { createCodebaseSearchTool } from "@/services/tkbk/index/codebase-search-tool"
+import { getTkbkIndexManager } from "@/services/tkbk/index/index-manager"
 import { Logger } from "@/shared/services/Logger"
 import type { SdkForegroundCommandCoordinator } from "./sdk-foreground-command-coordinator"
 import { createVscodeRunCommandsTool, VSCODE_FOREGROUND_RUN_COMMANDS_TIMEOUT_MS } from "./vscode-run-commands-tool"
@@ -86,6 +88,11 @@ export async function createVscodeExtraTools(mcpHub: McpHub, options?: VscodeExt
 	// response, and the turn-end inference in message-translator.ts styles that
 	// final text as the completion feedback row.
 	const tools: AgentTool[] = [...mcpTools.flat()]
+
+	// TKBK codebase index: semantic + lexical search over the workspace. The tool
+	// is always registered; it tells the model when the index is off or empty.
+	const cwd = options?.cwd
+	tools.push(createCodebaseSearchTool(() => getTkbkIndexManager()?.getIndex(cwd)))
 
 	// Add the custom run_commands tool when a terminal manager is available.
 	// This replaces the SDK's built-in run_commands, which is suppressed via

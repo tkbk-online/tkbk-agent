@@ -175,7 +175,7 @@ describe("DefaultRuntimeBuilder", () => {
 		tempDirs.push(tempHome, workspaceRoot);
 		setHomeDir(tempHome);
 
-		const globalAgentsDir = join(tempHome, ".cline", "agents");
+		const globalAgentsDir = join(tempHome, ".tkbk", "agents");
 		mkdirSync(globalAgentsDir, { recursive: true });
 		writeFileSync(
 			join(globalAgentsDir, "code-reviewer.yml"),

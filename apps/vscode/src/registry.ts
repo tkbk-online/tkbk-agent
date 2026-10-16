@@ -24,6 +24,8 @@ const ClineCommands = {
 	ImproveCode: prefix + ".improveCode",
 	FocusChatInput: prefix + ".focusChatInput",
 	Walkthrough: prefix + ".openWalkthrough",
+	ReviewChanges: prefix + ".reviewChanges",
+	ReindexCodebase: prefix + ".reindexCodebase",
 	// TKBK: the license of the saved key and the Pro-only cloud agent
 	RefreshLicense: prefix + ".refreshLicense",
 	CloudAgent: prefix + ".cloudAgent",

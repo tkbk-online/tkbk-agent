@@ -4,7 +4,12 @@
 import assert from "node:assert"
 import { resolveProviderApiKeyFromSettings } from "@cline/core"
 import { disableCurrentDirectoryExecutableSearch } from "@cline/shared"
-import { resolveTkbkDir, resolveTkbkSkillsDirPath } from "@cline/shared/storage"
+import {
+	resolveAgentsConfigDirPath,
+	resolveTkbkDir,
+	resolveTkbkRulesDirPath,
+	resolveTkbkSkillsDirPath,
+} from "@cline/shared/storage"
 import * as vscode from "vscode"
 import { Logger } from "@/shared/services/Logger"
 import { sendAccountButtonClickedEvent } from "./core/controller/ui/subscribeToAccountButtonClicked"
@@ -58,6 +63,15 @@ import { AuthService, LogoutReason } from "./sdk/auth-service"
 import { onProviderSettingsSaved } from "./sdk/model-catalog/provider-settings-events"
 import { getProviderSettingsManager } from "./sdk/provider-migration"
 import { installStarterSkills } from "./services/skills/tkbk-starter-skills"
+import { readIndexSettings, resolveEmbedder, setTkbkIndexManager, TkbkIndexManager } from "./services/tkbk/index/index-manager"
+import { installManagedMarkdown } from "./services/tkbk/managed-markdown"
+import { resolveSubagentFastModel } from "./services/tkbk/subagent-routing"
+
+/** The task started by «Проверить изменения»: the review role over the working-tree diff. */
+export const TKBK_REVIEW_CHANGES_PROMPT =
+	"Проверь текущие незакоммиченные изменения в проекте. Запусти субагента `review` с заданием: получить `git diff` и `git diff --cached`, " +
+	"прочитать затронутые файлы и вернуть замечания с серьёзностью и местом в коде. Затем кратко перескажи вердикт и замечания мне. Ничего не правь без моего подтверждения."
+
 import { telemetryService } from "./services/telemetry"
 import type { RolloutBundleActivation } from "./services/telemetry/rollout-metadata"
 import { TkbkLicenseService } from "./services/tkbk/license/TkbkLicenseService"
@@ -142,13 +156,87 @@ export async function activate(context: vscode.ExtensionContext) {
 				}
 			})
 			.catch((error) => Logger.warn("[TKBK] Failed to install starter skills:", error))
+	// 4d. Seed the subagent roles (explore / implement / test / review) into ~/.tkbk/agents.
+	// The explore role is re-rendered onto the fast model whenever the TKBK provider
+	// becomes active or the `tkbk-agent.subagents.*` settings change.
+	const seedStarterAgents = () =>
+		installManagedMarkdown(path.join(context.extensionPath, "agents"), resolveAgentsConfigDirPath(), {
+			fastModelId: resolveSubagentFastModel(),
+		})
+			.then((result) => {
+				if (result.installed.length > 0 || result.updated.length > 0) {
+					Logger.log(
+						`[TKBK] Subagent roles installed: ${result.installed.join(", ") || "-"}; updated: ${result.updated.join(", ") || "-"}`,
+					)
+				}
+			})
+			.catch((error) => Logger.warn("[TKBK] Failed to install subagent roles:", error))
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration("tkbk-agent.subagents")) {
+				void seedStarterAgents()
+			}
+		}),
+	)
+	context.subscriptions.push({ dispose: onProviderSettingsSaved(() => void seedStarterAgents()) })
+
+	// 4e. Seed the TKBK workflow rule (plan checklist, test-fix loop, project memory,
+	// when to use subagents) into ~/.tkbk/rules. Managed like the agent roles.
+	const seedStarterRules = () =>
+		installManagedMarkdown(path.join(context.extensionPath, "rules"), resolveTkbkRulesDirPath())
+			.then((result) => {
+				if (result.installed.length > 0 || result.updated.length > 0) {
+					Logger.log(
+						`[TKBK] Rules installed: ${result.installed.join(", ") || "-"}; updated: ${result.updated.join(", ") || "-"}`,
+					)
+				}
+			})
+			.catch((error) => Logger.warn("[TKBK] Failed to install rules:", error))
+
 	void license
 		.load()
 		.catch((error) => Logger.warn("[TKBK] License cache not read:", error))
 		.then(() => {
 			license.start()
-			return seedStarterSkills()
+			return Promise.all([seedStarterSkills(), seedStarterAgents(), seedStarterRules()])
 		})
+
+	// 4f. Codebase index (semantic search through the TKBK gateway, lexical fallback).
+	// Built in the background; `codebase_search` reads it. Rebuilt when the saved
+	// key/provider changes so vectors follow the person's own key.
+	const indexManager = new TkbkIndexManager({
+		getWorkspaceRoots: () => (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath),
+		watchFiles: (onChange) => {
+			const watcher = vscode.workspace.createFileSystemWatcher("**/*")
+			const forward = (uri: vscode.Uri) => {
+				if (uri.scheme === "file") {
+					onChange(uri.fsPath)
+				}
+			}
+			const subs = [watcher.onDidCreate(forward), watcher.onDidChange(forward), watcher.onDidDelete(forward)]
+			return {
+				dispose: () => {
+					for (const s of subs) {
+						s.dispose()
+					}
+					watcher.dispose()
+				},
+			}
+		},
+		onWorkspaceFoldersChanged: (listener) => vscode.workspace.onDidChangeWorkspaceFolders(listener),
+		onSettingsChanged: (listener) =>
+			vscode.workspace.onDidChangeConfiguration((event) => {
+				if (event.affectsConfiguration("tkbk-agent.index")) {
+					listener()
+				}
+			}),
+		readSettings: readIndexSettings,
+		resolveEmbedder,
+	})
+	setTkbkIndexManager(indexManager)
+	context.subscriptions.push(indexManager, { dispose: () => setTkbkIndexManager(undefined) })
+	context.subscriptions.push({ dispose: onProviderSettingsSaved(() => void indexManager.onProviderChanged()) })
+	indexManager.start()
 
 	// 5. Register services and commands specific to VS Code
 	// Initialize hook discovery cache for performance optimization
@@ -196,6 +284,25 @@ export async function activate(context: vscode.ExtensionContext) {
 			await sidebarInstance.controller.clearTask()
 			await sidebarInstance.controller.postStateToWebview()
 			await sendChatButtonClickedEvent()
+		}),
+	)
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.ReviewChanges, async () => {
+			const sidebarInstance = WebviewProvider.getInstance()
+			await showWebview()
+			await sidebarInstance.controller.clearTask()
+			await sidebarInstance.controller.postStateToWebview()
+			await sendChatButtonClickedEvent()
+			await sidebarInstance.controller.initTask(TKBK_REVIEW_CHANGES_PROMPT)
+		}),
+	)
+	context.subscriptions.push(
+		vscode.commands.registerCommand(commands.ReindexCodebase, async () => {
+			await indexManager.rebuildAll()
+			HostProvider.window.showMessage({
+				type: ShowMessageType.INFORMATION,
+				message: "TKBK Agent: индекс проекта пересобирается в фоне.",
+			})
 		}),
 	)
 	context.subscriptions.push(vscode.commands.registerCommand(commands.McpButton, () => sendMcpButtonClickedEvent()))

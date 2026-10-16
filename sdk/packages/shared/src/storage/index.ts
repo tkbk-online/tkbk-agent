@@ -56,6 +56,7 @@ export {
 	resolveTasksDbPath,
 	resolveTeamDataDir,
 	resolveTkbkDir,
+	resolveTkbkRulesDirPath,
 	resolveTkbkSkillsDirPath,
 	resolveWorkflowsConfigSearchPaths,
 	resolveWorkspaceCronSpecsDir,

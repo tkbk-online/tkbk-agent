@@ -1212,9 +1212,8 @@ export function buildToolApprovalAskMessage(toolName: string, input: unknown, ts
 		}
 	}
 
-	if (toolName === "spawn_agent") {
-		const parsedInput = parseToolInput(input)
-		const taskPrompt = getStringField(parsedInput, "task") ?? ""
+	if (isSubagentToolName(toolName)) {
+		const taskPrompt = subagentPromptLabel(toolName, input)
 		return {
 			ts,
 			type: "ask",
@@ -1233,6 +1232,32 @@ export function buildToolApprovalAskMessage(toolName: string, input: unknown, ts
 		text: JSON.stringify(toDisplaySayTool(sdkToolToClineSayTool(toolName, input), cwd)),
 		partial: false,
 	}
+}
+
+/**
+ * Subagent tools: the generic `spawn_agent` and the configured roles the SDK
+ * exposes as `subagent_<name>` (explore / implement / test / review seeded into
+ * ~/.tkbk/agents). All of them render through the SubagentStatusRow UI.
+ */
+export const CONFIGURED_SUBAGENT_TOOL_PREFIX = "subagent_"
+
+export function isSubagentToolName(toolName: string | undefined): boolean {
+	return toolName === "spawn_agent" || (typeof toolName === "string" && toolName.startsWith(CONFIGURED_SUBAGENT_TOOL_PREFIX))
+}
+
+/**
+ * The text shown on a subagent card: the configured role name as a prefix
+ * ("explore: …") plus the task — `spawn_agent` sends it as `task`, configured
+ * roles as `prompt`.
+ */
+export function subagentPromptLabel(toolName: string, input: unknown): string {
+	const parsedInput = parseToolInput(input)
+	const prompt = getStringField(parsedInput, "task") ?? getStringField(parsedInput, "prompt") ?? ""
+	if (toolName.startsWith(CONFIGURED_SUBAGENT_TOOL_PREFIX)) {
+		const role = toolName.slice(CONFIGURED_SUBAGENT_TOOL_PREFIX.length)
+		return role ? `${role}: ${prompt}` : prompt
+	}
+	return prompt
 }
 
 // ---------------------------------------------------------------------------
@@ -1450,9 +1475,8 @@ function translateAgentEvent(event: AgentEvent, state: MessageTranslatorState): 
 					// Emit say:"use_subagents" with prompts list, then say:"subagent"
 					// with running status. Multiple parallel spawn_agent calls in the
 					// same iteration are aggregated into a single status message.
-					if (toolName === "spawn_agent") {
-						const parsedInput = parseToolInput(input)
-						const taskPrompt = getStringField(parsedInput, "task") ?? ""
+					if (isSubagentToolName(toolName)) {
+						const taskPrompt = subagentPromptLabel(toolName, input)
 						const callId = event.toolCallId ?? `spawn-${state.nextTs()}`
 						state.addSpawnAgent(callId, taskPrompt)
 						if (approvedToolMessageTs !== undefined) {
@@ -1546,7 +1570,7 @@ function translateAgentEvent(event: AgentEvent, state: MessageTranslatorState): 
 			// The SDK's spawn_agent tool may emit content_update events with
 			// sub-agent progress (iterations, tool calls, usage). We translate
 			// these into the ClineSaySubagentStatus format for the rich UI.
-			if (updateToolName === "spawn_agent" && state.hasSpawnAgents()) {
+			if (isSubagentToolName(updateToolName) && state.hasSpawnAgents()) {
 				const callId = event.toolCallId ?? ""
 				const entry = callId ? state.getSpawnAgent(callId) : undefined
 				if (entry) {
@@ -1654,7 +1678,7 @@ function translateAgentEvent(event: AgentEvent, state: MessageTranslatorState): 
 					// say:"subagent" (completed/failed) + say:"subagent_usage".
 					// When all spawn_agent calls in this iteration finish, the
 					// final say:"subagent" has partial=false.
-					if (toolName === "spawn_agent") {
+					if (isSubagentToolName(toolName)) {
 						const callId = event.toolCallId ?? ""
 						const entry = callId ? state.getSpawnAgent(callId) : undefined
 						if (entry) {
@@ -2095,7 +2119,7 @@ export function translateSessionEvent(event: CoreSessionEvent, state: MessageTra
 			const isToolLifecycleEvent =
 				agentEvent.type === "content_start" || agentEvent.type === "content_update" || agentEvent.type === "content_end"
 			const isSpawnAgentToolEvent =
-				isToolLifecycleEvent && agentEvent.contentType === "tool" && agentEvent.toolName === "spawn_agent"
+				isToolLifecycleEvent && agentEvent.contentType === "tool" && isSubagentToolName(agentEvent.toolName)
 
 			// Newer SDK events carry parentAgentId on sub-agent events. Older/local
 			// RuntimeEventAdapter output does not, so while spawn_agent calls are in

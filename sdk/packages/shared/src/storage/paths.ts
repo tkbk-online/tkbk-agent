@@ -503,6 +503,9 @@ export function resolveAgentConfigSearchPaths(
 ): string[] {
 	return dedupePaths([
 		workspacePath
+			? join(workspacePath, TKBK_CONFIG_DIR, AGENT_CONFIG_DIRECTORY_NAME)
+			: "",
+		workspacePath
 			? join(workspacePath, CLINE_CONFIG_DIR, AGENT_CONFIG_DIRECTORY_NAME)
 			: "",
 		resolveAgentsConfigDirPath(),
@@ -532,6 +535,11 @@ export function resolveTkbkDir(): string {
 
 export function resolveTkbkSkillsDirPath(): string {
 	return join(resolveTkbkDir(), SKILLS_CONFIG_DIRECTORY_NAME);
+}
+
+/** Global TKBK rules: `~/.tkbk/rules` (loaded into every task's prompt). */
+export function resolveTkbkRulesDirPath(): string {
+	return join(resolveTkbkDir(), RULES_CONFIG_DIRECTORY_NAME);
 }
 
 export function resolveSkillsConfigSearchPaths(
@@ -564,6 +572,7 @@ export function resolveWorkspaceRulesConfigPaths(
 	workspacePath: string,
 ): string[] {
 	return [
+		join(workspacePath, TKBK_CONFIG_DIR, RULES_CONFIG_DIRECTORY_NAME),
 		join(workspacePath, DEPRECATED_CONFIG_DIR),
 		join(workspacePath, CLINE_CONFIG_DIR, RULES_CONFIG_DIRECTORY_NAME),
 	];

@@ -661,26 +661,37 @@ export class DefaultRuntimeBuilder implements RuntimeBuilder {
 							agents: configuredAgents.configs,
 							createSubAgentTools: (agent) =>
 								normalized.enableTools
-									? filterToolsForConfiguredAgent(
-											createBuiltinToolsList(
-												config.cwd,
-												agent.providerId ?? config.providerId,
-												normalized.mode,
-												agent.modelId ?? config.modelId,
-												config.toolRoutingRules,
-												effectiveToolPolicies,
-												agent.skills !== undefined &&
-													userInstructionService?.createSkillsExecutor
-													? userInstructionService.createSkillsExecutor(
-															agent.skills,
-														)
-													: undefined,
-												toolExecutors,
-												telemetry ?? config.telemetry,
-												input.runCommandExecutionController,
+									? [
+											...filterToolsForConfiguredAgent(
+												createBuiltinToolsList(
+													config.cwd,
+													agent.providerId ?? config.providerId,
+													normalized.mode,
+													agent.modelId ?? config.modelId,
+													config.toolRoutingRules,
+													effectiveToolPolicies,
+													agent.skills !== undefined &&
+														userInstructionService?.createSkillsExecutor
+														? userInstructionService.createSkillsExecutor(
+																agent.skills,
+															)
+														: undefined,
+													toolExecutors,
+													telemetry ?? config.telemetry,
+													input.runCommandExecutionController,
+												),
+												agent,
 											),
-											agent,
-										)
+											// Host-provided tools (e.g. a codebase index) reach a
+											// configured role only when its allowlist names them, so
+											// MCP tools and host overrides never leak in by default.
+											...(agent.tools !== undefined
+												? filterToolsForConfiguredAgent(
+														config.extraTools ?? [],
+														agent,
+													)
+												: []),
+										]
 									: [],
 							hookErrorMode: config.hookErrorMode,
 							onSubAgentEvent: input.onSubAgentEvent,

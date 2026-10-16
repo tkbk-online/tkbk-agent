@@ -1182,7 +1182,9 @@ export async function buildSessionConfig(input: SessionConfigInput): Promise<Cor
 		checkpoint: {
 			enabled: enableCheckpoints,
 		},
-		enableSpawnAgent: false,
+		// TKBK Agent runs subagents: the generic spawn_agent plus the configured
+		// roles seeded into ~/.tkbk/agents (explore / implement / test / review).
+		enableSpawnAgent: true,
 		enableAgentTeams: false,
 		...(useAutoCondense
 			? {

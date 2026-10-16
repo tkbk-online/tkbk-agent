@@ -54,6 +54,7 @@ import {
 	disposeVscodeCommentReviewController,
 	getVscodeCommentReviewController,
 } from "./hosts/vscode/review/VscodeCommentReviewController"
+import { registerBackgroundTasksUi } from "./hosts/vscode/tkbk/background-tasks-view"
 import { DIFF_VIEW_URI_SCHEME, diffContentProvider } from "./hosts/vscode/VscodeDiffContentProvider"
 import { EDIT_PREVIEW_URI_SCHEME, editPreviewContentProvider, VscodeEditPreview } from "./hosts/vscode/VscodeEditPreview"
 import { VscodeWebviewProvider } from "./hosts/vscode/VscodeWebviewProvider"
@@ -63,6 +64,9 @@ import { AuthService, LogoutReason } from "./sdk/auth-service"
 import { onProviderSettingsSaved } from "./sdk/model-catalog/provider-settings-events"
 import { getProviderSettingsManager } from "./sdk/provider-migration"
 import { installStarterSkills } from "./services/skills/tkbk-starter-skills"
+import { HeadlessBackgroundRunner } from "./services/tkbk/background/background-runner"
+import { BackgroundTaskManager } from "./services/tkbk/background/background-tasks"
+import { SimpleGitOps } from "./services/tkbk/background/git-ops"
 import { readIndexSettings, resolveEmbedder, setTkbkIndexManager, TkbkIndexManager } from "./services/tkbk/index/index-manager"
 import { installManagedMarkdown } from "./services/tkbk/managed-markdown"
 import { resolveSubagentFastModel } from "./services/tkbk/subagent-routing"
@@ -237,6 +241,28 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(indexManager, { dispose: () => setTkbkIndexManager(undefined) })
 	context.subscriptions.push({ dispose: onProviderSettingsSaved(() => void indexManager.onProviderChanged()) })
 	indexManager.start()
+
+	// 4g. Background tasks: the agent works headless in its own git worktree; the
+	// person applies, opens or rejects the result from the «Фоновые задачи» view.
+	// Free runs one task at a time, paid plans up to three.
+	const backgroundTasks = new BackgroundTaskManager({
+		git: new SimpleGitOps(),
+		runner: new HeadlessBackgroundRunner(),
+		maxConcurrent: () => (license.view().plan === "free" ? 1 : 3),
+		limitReason: () => (license.view().plan === "free" ? "на плане Free — одна задача одновременно, Pro — три" : undefined),
+		log: (message) => Logger.log(message),
+	})
+	context.subscriptions.push({ dispose: () => backgroundTasks.dispose() })
+	registerBackgroundTasksUi(context, {
+		manager: backgroundTasks,
+		commandPrefix: ExtensionRegistryInfo.name,
+		getRepoPath: async () => {
+			const paths = (await HostProvider.workspace.getWorkspacePaths({})).paths
+			return paths[0]
+		},
+		planHint: () =>
+			license.view().plan === "free" ? "На плане Free задачи идут по одной; Pro запускает до трёх параллельно." : undefined,
+	})
 
 	// 5. Register services and commands specific to VS Code
 	// Initialize hook discovery cache for performance optimization

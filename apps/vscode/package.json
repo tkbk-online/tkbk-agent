@@ -138,6 +138,14 @@
 					"id": "tkbk-agent.SidebarProvider",
 					"name": "",
 					"icon": "assets/icons/icon.svg"
+				},
+				{
+					"type": "tree",
+					"id": "tkbk-agent.backgroundTasks",
+					"name": "Фоновые задачи",
+					"icon": "assets/icons/icon.svg",
+					"contextualTitle": "TKBK Agent: фоновые задачи",
+					"visibility": "collapsed"
 				}
 			]
 		},
@@ -264,6 +272,60 @@
 				"command": "tkbk-agent.reindexCodebase",
 				"title": "Переиндексировать проект",
 				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.new",
+				"title": "Фоновая задача…",
+				"icon": "$(add)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.refresh",
+				"title": "Обновить список задач",
+				"icon": "$(refresh)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.apply",
+				"title": "Применить изменения",
+				"icon": "$(check)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.open",
+				"title": "Открыть worktree",
+				"icon": "$(folder-opened)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.showDiff",
+				"title": "Показать diff",
+				"icon": "$(diff)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.showReport",
+				"title": "Показать отчёт",
+				"icon": "$(book)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.reject",
+				"title": "Отклонить",
+				"icon": "$(trash)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.cancel",
+				"title": "Отменить задачу",
+				"icon": "$(stop-circle)",
+				"category": "TKBK Agent"
+			},
+			{
+				"command": "tkbk-agent.backgroundTask.remove",
+				"title": "Убрать из списка",
+				"icon": "$(close)",
+				"category": "TKBK Agent"
 			}
 		],
 		"keybindings": [
@@ -314,6 +376,16 @@
 					"command": "tkbk-agent.settingsButtonClicked",
 					"group": "navigation@6",
 					"when": "view == tkbk-agent.SidebarProvider"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.new",
+					"group": "navigation@1",
+					"when": "view == tkbk-agent.backgroundTasks"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.refresh",
+					"group": "navigation@2",
+					"when": "view == tkbk-agent.backgroundTasks"
 				}
 			],
 			"editor/context": [
@@ -368,6 +440,95 @@
 				{
 					"command": "tkbk-agent.abortGitCommitMessage",
 					"when": "config.git.enabled && cline.isGeneratingCommit"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.apply",
+					"when": "false"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.open",
+					"when": "false"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.showDiff",
+					"when": "false"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.showReport",
+					"when": "false"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.reject",
+					"when": "false"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.cancel",
+					"when": "false"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.remove",
+					"when": "false"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.refresh",
+					"when": "false"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "tkbk-agent.backgroundTask.apply",
+					"group": "inline@1",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.showDiff",
+					"group": "inline@2",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.open",
+					"group": "inline@3",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(done|failed|running)/"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.cancel",
+					"group": "inline@4",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(queued|preparing|running)/"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.apply",
+					"group": "1_actions@1",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.showDiff",
+					"group": "1_actions@2",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem == tkbkTask:done"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.showReport",
+					"group": "1_actions@3",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(done|failed|applied)/"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.open",
+					"group": "1_actions@4",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(done|failed|running)/"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.reject",
+					"group": "2_danger@1",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(done|failed)/"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.cancel",
+					"group": "2_danger@2",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(queued|preparing|running)/"
+				},
+				{
+					"command": "tkbk-agent.backgroundTask.remove",
+					"group": "2_danger@3",
+					"when": "view == tkbk-agent.backgroundTasks && viewItem =~ /tkbkTask:(applied|rejected|cancelled|failed)/"
 				}
 			]
 		},
